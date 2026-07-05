@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Locker - Gate Your Content, Grow Your Audience</title>
+    <meta name="description" content="The ultimate content-gating platform for creators. Gate files, links, and exclusive content behind social actions.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        .gradient-text {
+            background: linear-gradient(to right, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(16px);
+        }
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .scroll-animation { animation: scroll 20s linear infinite; }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white min-h-screen">
+    
+    <!-- App Container -->
+    <div id="app"></div>
+
+    <script>
+        // ==================== STATE MANAGEMENT ====================
+        const state = {
+            currentPage: 'home',
+            user: null,
+            campaigns: [],
+            demoProgress: 0
+        };
+
+        // Load state from localStorage
+        function loadState() {
+            const saved = localStorage.getItem('contentLocker');
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.user = data.user;
+                state.campaigns = data.campaigns || [];
+            }
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('contentLocker', JSON.stringify({
+                user: state.user,
+                campaigns: state.campaigns
+            }));
+        }
+
+        // ==================== NAVIGATION ====================
+        function navigate(page, data = {}) {
+            state.currentPage = page;
+            state.pageData = data;
+            render();
+        }
+
+        // ==================== SUPPORTED PLATFORMS ====================
+        const PLATFORMS = [
+            { id: 'youtube', name: 'YouTube', icon: '📺', action: 'Subscribe' },
+            { id: 'instagram', name: 'Instagram', icon: '📷', action: 'Follow' },
+            { id: 'tiktok', name: 'TikTok', icon: '🎵', action: 'Follow' },
+            { id: 'twitter', name: 'X (Twitter)', icon: '🐦', action: 'Follow' },
+            { id: 'discord', name: 'Discord', icon: '💬', action: 'Join Server' },
+            { id: 'twitch', name: 'Twitch', icon: '🎮', action: 'Follow' },
+            { id: 'spotify', name: 'Spotify', icon: '🎧', action: 'Follow' },
+            { id: 'facebook', name: 'Facebook', icon: '👥', action: 'Like Page' },
+            { id: 'linkedin', name: 'LinkedIn', icon: '💼', action: 'Follow' },
+            { id: 'github', name: 'GitHub', icon: '⚙️', action: 'Star Repo' },
+            { id: 'telegram', name: 'Telegram', icon: '✈️', action: 'Join Channel' },
+            { id: 'whatsapp', name: 'WhatsApp', icon: '💚', action: 'Join Group' },
+        ];
+
+        // ==================== PAGES ====================
+
+        // HOME PAGE
+        function HomePage() {
+            const demoActions = [
+                { platform: 'YouTube', icon: '📺', action: 'Subscribe' },
+                { platform: 'Instagram', icon: '📷', action: 'Follow' },
+                { platform: 'Discord', icon: '💬', action: 'Join Server' },
+            ];
+
+            return `
+                <!-- Navigation -->
+                <nav class="border-b border-white/10 glass sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-16">
+                            <div class="flex items-center space-x-2 cursor-pointer" onclick="navigate('home')">
+                                <span class="text-2xl">🔒</span>
+                                <span class="text-xl font-bold">Content Locker</span>
+                            </div>
+                            <div class="hidden md:flex items-center space-x-8">
+                                <a href="#features" class="text-gray-300 hover:text-white transition">Features</a>
+                                <a href="#pricing" class="text-gray-300 hover:text-white transition">Pricing</a>
+                                <a href="#faq" class="text-gray-300 hover:text-white transition">FAQ</a>
+                                ${state.user ? `
+                                    <button onclick="navigate('dashboard')" class="text-gray-300 hover:text-white transition">Dashboard</button>
+                                    <button onclick="logout()" class="text-gray-400 hover:text-white transition text-sm">Logout</button>
+                                ` : `
+                                    <button onclick="navigate('signin')" class="text-gray-300 hover:text-white transition">Sign In</button>
+                                    <button onclick="navigate('signup')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                        Get Started Free
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <!-- Hero Section -->
+                <section class="relative overflow-hidden pt-20 pb-32">
+                    <div class="absolute inset-0 bg-gradient-radial from-purple-700/20 via-transparent to-transparent"></div>
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+                        <div class="grid lg:grid-cols-2 gap-12 items-center">
+                            <div class="text-center lg:text-left fade-in">
+                                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+                                    Gate Your Content,
+                                    <span class="gradient-text"> Grow Your Audience</span>
+                                </h1>
+                                <p class="text-xl text-gray-300 mb-8 max-w-2xl">
+                                    The ultimate platform for creators. Lock exclusive content behind social actions. Turn every download into followers, subscribers, and engaged fans.
+                                </p>
+                                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                                    <button onclick="navigate('signup')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-full text-lg font-semibold hover:shadow-2xl hover:shadow-purple-500/50 transition transform hover:scale-105">
+                                        Create Your First Link — Free
+                                    </button>
+                                    <a href="#demo" class="border border-white/30 px-8 py-4 rounded-full text-lg font-semibold hover:bg-white/10 transition text-center">
+                                        See How It Works
+                                    </a>
+                                </div>
+                                <div class="mt-8 flex items-center gap-6 text-sm text-gray-400 justify-center lg:justify-start flex-wrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-green-400">✓</span> No credit card required
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-green-400">✓</span> 70+ platforms
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-green-400">✓</span> Setup in 2 minutes
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Live Demo Widget -->
+                            <div id="demo" class="glass rounded-3xl border border-white/10 p-8 shadow-2xl fade-in">
+                                <div class="text-center mb-6">
+                                    <div class="w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-4xl">
+                                        🎵
+                                    </div>
+                                    <h3 class="text-2xl font-bold mb-2">Exclusive Beat Pack</h3>
+                                    <p class="text-gray-400">Complete these actions to unlock your download</p>
+                                </div>
+
+                                <div class="mb-6">
+                                    <div class="flex justify-between text-sm text-gray-400 mb-2">
+                                        <span>Progress</span>
+                                        <span id="demoProgressText">${state.demoProgress}/3 completed</span>
+                                    </div>
+                                    <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                        <div id="demoProgressBar" class="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500" style="width: ${(state.demoProgress / 3) * 100}%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3 mb-6">
+                                    ${demoActions.map((action, index) => `
+                                        <div class="flex items-center justify-between p-4 rounded-xl border transition ${
+                                            index < state.demoProgress
+                                                ? 'bg-green-500/10 border-green-500/50'
+                                                : 'bg-slate-700/30 border-slate-600/50'
+                                        }">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl">${action.icon}</span>
+                                                <div>
+                                                    <div class="font-semibold">${action.platform}</div>
+                                                    <div class="text-sm text-gray-400">${action.action}</div>
+                                                </div>
+                                            </div>
+                                            ${index < state.demoProgress ? `
+                                                <span class="text-2xl">✅</span>
+                                            ` : `
+                                                <button
+                                                    onclick="handleDemoAction(${index})"
+                                                    ${index !== state.demoProgress ? 'disabled' : ''}
+                                                    class="px-4 py-2 rounded-lg font-semibold transition ${
+                                                        index === state.demoProgress
+                                                            ? 'bg-purple-600 hover:bg-purple-700 cursor-pointer'
+                                                            : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                                                    }">
+                                                    Complete
+                                                </button>
+                                            `}
+                                        </div>
+                                    `).join('')}
+                                </div>
+
+                                ${state.demoProgress === 3 ? `
+                                    <div class="text-center animate-bounce-slow">
+                                        <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-xl font-bold text-lg mb-2">
+                                            🎉 Unlocked! Download Your Beat Pack
+                                        </div>
+                                        <p class="text-sm text-gray-400">This is a demo — create your real link above!</p>
+                                    </div>
+                                ` : `
+                                    <div class="flex items-center justify-center gap-2 text-gray-500 py-4">
+                                        <span class="text-3xl">🔒</span>
+                                        <span class="font-semibold">Complete all actions to unlock</span>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Social Proof Strip -->
+                <section class="py-12 border-y border-white/10 bg-black/30">
+                    <div class="max-w-7xl mx-auto px-4">
+                        <p class="text-center text-gray-400 mb-6">Trusted by creators across all platforms</p>
+                        <div class="overflow-hidden">
+                            <div class="flex gap-8 scroll-animation" style="width: 200%;">
+                                ${['📺', '📷', '🎵', '🐦', '💬', '🎮', '🎧', '👥', '💼', '⚙️', '✈️', '💚', '📺', '📷', '🎵', '🐦', '💬', '🎮', '🎧', '👥', '💼', '⚙️', '✈️', '💚'].map(icon => `
+                                    <span class="text-4xl grayscale opacity-50">${icon}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Features Section -->
+                <section id="features" class="py-24">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mb-16">
+                            <h2 class="text-4xl md:text-5xl font-bold mb-4">
+                                Everything You Need to <span class="gradient-text">Grow</span>
+                            </h2>
+                            <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                                Powerful features designed for creators who want to monetize their content and build a loyal audience
+                            </p>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            ${[
+                                { icon: '🎯', title: 'Multi-Platform Actions', description: 'Support for 70+ platforms including YouTube, Instagram, TikTok, Twitch, Discord, Spotify, and more.' },
+                                { icon: '📊', title: 'Advanced Analytics', description: 'Track clicks, conversions, follower growth, traffic sources, and geographic data in real-time.' },
+                                { icon: '📧', title: 'Email List Building', description: 'Capture emails as an unlock requirement. Export to CSV or integrate with Mailchimp, ConvertKit.' },
+                                { icon: '🔗', title: 'Link-in-Bio Pages', description: 'Beautiful, customizable profile pages with all your links in one place. Perfect for social bios.' },
+                                { icon: '🎨', title: 'Custom Branding', description: 'White-label your unlock pages with custom colors, logos, and domains. Remove all platform branding.' },
+                                { icon: '⏰', title: 'Time-Limited Drops', description: 'Create urgency with countdown timers and unlock limits. Perfect for exclusive releases.' },
+                            ].map(feature => `
+                                <div class="glass rounded-2xl border border-white/10 p-8 hover:border-purple-500/50 transition transform hover:scale-105">
+                                    <div class="text-5xl mb-4">${feature.icon}</div>
+                                    <h3 class="text-xl font-bold mb-3">${feature.title}</h3>
+                                    <p class="text-gray-400">${feature.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pricing Section -->
+                <section id="pricing" class="py-24 bg-black/30">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mb-16">
+                            <h2 class="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h2>
+                            <p class="text-xl text-gray-400">Start free, scale as you grow</p>
+                        </div>
+
+                        <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                            ${[
+                                {
+                                    name: 'Free',
+                                    price: '$0',
+                                    description: 'Perfect for getting started',
+                                    features: ['3 active campaigns', '1,000 unlocks/month', 'Basic analytics', '70+ platform integrations', 'Email capture', 'Content Locker branding'],
+                                    highlighted: false
+                                },
+                                {
+                                    name: 'Pro',
+                                    price: '$19',
+                                    description: 'For serious creators',
+                                    features: ['Unlimited campaigns', 'Unlimited unlocks', 'Advanced analytics', 'Remove branding', 'Custom domain', 'Email export & integrations', 'Priority support', 'Time-limited drops'],
+                                    highlighted: true
+                                },
+                                {
+                                    name: 'Business',
+                                    price: '$49',
+                                    description: 'For teams and agencies',
+                                    features: ['Everything in Pro', '5 team members', 'White-label', 'API access', 'Dedicated integrations', 'Custom contracts', 'Priority onboarding'],
+                                    highlighted: false
+                                }
+                            ].map(plan => `
+                                <div class="rounded-2xl border p-8 ${plan.highlighted ? 'glass border-purple-500 scale-105' : 'bg-slate-800/50 border-white/10'}">
+                                    <h3 class="text-2xl font-bold mb-2">${plan.name}</h3>
+                                    <p class="text-gray-400 mb-4">${plan.description}</p>
+                                    <div class="mb-6">
+                                        <span class="text-5xl font-bold">${plan.price}</span>
+                                        <span class="text-gray-400">/month</span>
+                                    </div>
+                                    <button onclick="navigate('signup')" class="w-full py-3 rounded-xl font-semibold mb-6 transition ${
+                                        plan.highlighted
+                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-lg hover:shadow-purple-500/50'
+                                            : 'bg-white/10 hover:bg-white/20'
+                                    }">
+                                        ${plan.highlighted ? 'Start Free Trial' : 'Get Started'}
+                                    </button>
+                                    <ul class="space-y-3">
+                                        ${plan.features.map(feature => `
+                                            <li class="flex items-start gap-2 text-gray-300">
+                                                <span class="text-green-400 mt-1">✓</span>
+                                                <span>${feature}</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FAQ Section -->
+                <section id="faq" class="py-24">
+                    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mb-16">
+                            <h2 class="text-4xl md:text-5xl font-bold mb-4">Frequently Asked Questions</h2>
+                        </div>
+
+                        <div class="space-y-4">
+                            ${[
+                                { question: 'How does verification work?', answer: 'Content Locker uses a hybrid approach. For platforms with public APIs (like YouTube, Discord), we verify actions in real-time. For platforms without verification APIs, we use an honor-system "click-to-complete" flow that opens the target link and lets visitors self-report completion. This is industry-standard and highly effective.' },
+                                { question: 'Do visitors need to create an account?', answer: 'No! Visitors can unlock content without signing up. This reduces friction and maximizes your conversion rate.' },
+                                { question: 'Can I use my own domain?', answer: 'Yes! Pro and Business plans support custom domains so you can use links like unlock.yourbrand.com.' },
+                                { question: 'What types of content can I lock?', answer: 'You can lock downloadable files (music, PDFs, images, videos), URLs (private links, discount codes, Patreon posts), text/code snippets, or Discord server invites.' },
+                                { question: 'Is there a limit to unlocks?', answer: 'Free plan includes 1,000 unlocks per month. Pro and Business plans have unlimited unlocks.' },
+                                { question: 'Can I export my email list?', answer: 'Yes! Export to CSV or connect to email marketing tools like Mailchimp, ConvertKit, or MailerLite.' },
+                            ].map(faq => `
+                                <details class="bg-slate-800/50 rounded-xl border border-white/10 p-6 group">
+                                    <summary class="font-semibold cursor-pointer flex justify-between items-center">
+                                        ${faq.question}
+                                        <span class="text-purple-400 group-open:rotate-180 transition">▼</span>
+                                    </summary>
+                                    <p class="text-gray-400 mt-4">${faq.answer}</p>
+                                </details>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CTA Section -->
+                <section class="py-24 bg-gradient-to-r from-purple-900/50 to-pink-900/50">
+                    <div class="max-w-4xl mx-auto text-center px-4">
+                        <h2 class="text-4xl md:text-5xl font-bold mb-6">Ready to Grow Your Audience?</h2>
+                        <p class="text-xl text-gray-300 mb-8">Join thousands of creators turning content into followers</p>
+                        <button onclick="navigate('signup')" class="bg-white text-purple-600 px-10 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition transform hover:scale-105">
+                            Create Your First Link — Free
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="border-t border-white/10 py-12 bg-black/50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="grid md:grid-cols-4 gap-8 mb-8">
+                            <div>
+                                <div class="flex items-center space-x-2 mb-4">
+                                    <span class="text-2xl">🔒</span>
+                                    <span class="text-xl font-bold">Content Locker</span>
+                                </div>
+                                <p class="text-gray-400">The ultimate content-gating platform for creators.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-4">Product</h4>
+                                <ul class="space-y-2 text-gray-400">
+                                    <li><a href="#features" class="hover:text-white transition">Features</a></li>
+                                    <li><a href="#pricing" class="hover:text-white transition">Pricing</a></li>
+                                    <li><button onclick="navigate('signup')" class="hover:text-white transition">Sign Up</button></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-4">Resources</h4>
+                                <ul class="space-y-2 text-gray-400">
+                                    <li><a href="#" class="hover:text-white transition">Documentation</a></li>
+                                    <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                                    <li><a href="#faq" class="hover:text-white transition">FAQ</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-4">Legal</h4>
+                                <ul class="space-y-2 text-gray-400">
+                                    <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                                    <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="border-t border-white/10 pt-8 text-center text-gray-400">
+                            <p>&copy; 2024 Content Locker. All rights reserved.</p>
+                        </div>
+                    </div>
+                </footer>
+            `;
+        }
+
+        // SIGN UP PAGE
+        function SignUpPage() {
+            return `
+                <div class="min-h-screen flex items-center justify-center px-4 py-12">
+                    <div class="max-w-md w-full">
+                        <div class="text-center mb-8">
+                            <button onclick="navigate('home')" class="inline-flex items-center space-x-2 mb-8 hover:opacity-80 transition">
+                                <span class="text-3xl">🔒</span>
+                                <span class="text-2xl font-bold">Content Locker</span>
+                            </button>
+                            <h1 class="text-3xl font-bold mb-2">Create your account</h1>
+                            <p class="text-gray-400">Start growing your audience today</p>
+                        </div>
+
+                        <div class="glass rounded-2xl border border-white/10 p-8">
+                            <form onsubmit="handleSignUp(event)" class="space-y-6">
+                                <div id="signupError" class="hidden bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg"></div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                                    <input type="text" name="name" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="John Doe">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                                    <input type="text" name="username" required pattern="[a-z0-9]+" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="johndoe">
+                                    <p class="text-xs text-gray-500 mt-1">Your profile: contentlocker.app/<span id="usernamePreview">username</span></p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                    <input type="email" name="email" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="you@example.com">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                    <input type="password" name="password" required minlength="8" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="••••••••">
+                                </div>
+
+                                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                    Create Account
+                                </button>
+                            </form>
+
+                            <div class="mt-6 text-center text-sm text-gray-400">
+                                Already have an account? 
+                                <button onclick="navigate('signin')" class="text-purple-400 hover:text-purple-300 font-semibold">Sign In</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // SIGN IN PAGE
+        function SignInPage() {
+            return `
+                <div class="min-h-screen flex items-center justify-center px-4 py-12">
+                    <div class="max-w-md w-full">
+                        <div class="text-center mb-8">
+                            <button onclick="navigate('home')" class="inline-flex items-center space-x-2 mb-8 hover:opacity-80 transition">
+                                <span class="text-3xl">🔒</span>
+                                <span class="text-2xl font-bold">Content Locker</span>
+                            </button>
+                            <h1 class="text-3xl font-bold mb-2">Welcome back</h1>
+                            <p class="text-gray-400">Sign in to your account</p>
+                        </div>
+
+                        <div class="glass rounded-2xl border border-white/10 p-8">
+                            <form onsubmit="handleSignIn(event)" class="space-y-6">
+                                <div id="signinError" class="hidden bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg"></div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                    <input type="email" name="email" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="you@example.com">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                    <input type="password" name="password" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="••••••••">
+                                </div>
+
+                                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                    Sign In
+                                </button>
+                            </form>
+
+                            <div class="mt-6 text-center text-sm text-gray-400">
+                                Don't have an account? 
+                                <button onclick="navigate('signup')" class="text-purple-400 hover:text-purple-300 font-semibold">Sign Up</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // DASHBOARD PAGE
+        function DashboardPage() {
+            if (!state.user) {
+                navigate('signin');
+                return '';
+            }
+
+            const stats = {
+                totalClicks: state.campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0),
+                totalUnlocks: state.campaigns.reduce((sum, c) => sum + (c.unlocks || 0), 0),
+                activeCampaigns: state.campaigns.filter(c => c.status === 'active').length
+            };
+
+            return `
+                <!-- Navigation -->
+                <nav class="border-b border-white/10 glass sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-16">
+                            <div class="flex items-center space-x-8">
+                                <button onclick="navigate('dashboard')" class="flex items-center space-x-2">
+                                    <span class="text-2xl">🔒</span>
+                                    <span class="text-xl font-bold">Content Locker</span>
+                                </button>
+                                <button onclick="navigate('dashboard')" class="text-white font-semibold">Dashboard</button>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <button onclick="navigate('profile', {username: '${state.user.username}'})" class="text-gray-400 hover:text-white transition text-sm">
+                                    View Profile
+                                </button>
+                                <button onclick="logout()" class="text-gray-400 hover:text-white transition">Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">Welcome back, ${state.user.name}! 👋</h1>
+                            <p class="text-gray-400">Here's what's happening with your content</p>
+                        </div>
+                        <button onclick="navigate('newCampaign')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                            + Create Campaign
+                        </button>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="glass rounded-xl border border-white/10 p-6">
+                            <div class="text-gray-400 text-sm mb-2">Total Clicks</div>
+                            <div class="text-3xl font-bold">${stats.totalClicks}</div>
+                        </div>
+                        <div class="glass rounded-xl border border-white/10 p-6">
+                            <div class="text-gray-400 text-sm mb-2">Total Unlocks</div>
+                            <div class="text-3xl font-bold">${stats.totalUnlocks}</div>
+                        </div>
+                        <div class="glass rounded-xl border border-white/10 p-6">
+                            <div class="text-gray-400 text-sm mb-2">Active Campaigns</div>
+                            <div class="text-3xl font-bold">${stats.activeCampaigns}</div>
+                        </div>
+                    </div>
+
+                    <!-- Campaigns List -->
+                    <div class="glass rounded-xl border border-white/10 p-6">
+                        <h2 class="text-2xl font-bold mb-6">Your Campaigns</h2>
+
+                        ${state.campaigns.length === 0 ? `
+                            <div class="text-center py-12">
+                                <div class="text-6xl mb-4">🚀</div>
+                                <h3 class="text-xl font-semibold mb-2">No campaigns yet</h3>
+                                <p class="text-gray-400 mb-6">Create your first gated link and start growing your audience</p>
+                                <button onclick="navigate('newCampaign')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                    Create Your First Campaign
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="space-y-4">
+                                ${state.campaigns.map(campaign => `
+                                    <div class="bg-slate-700/30 rounded-lg border border-slate-600/50 p-6 hover:border-purple-500/50 transition">
+                                        <div class="flex items-start justify-between flex-wrap gap-4">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-3 mb-2">
+                                                    <h3 class="text-lg font-semibold">${campaign.title}</h3>
+                                                    <span class="px-2 py-1 rounded text-xs font-semibold ${
+                                                        campaign.status === 'active' 
+                                                            ? 'bg-green-500/20 text-green-400'
+                                                            : 'bg-gray-500/20 text-gray-400'
+                                                    }">${campaign.status}</span>
+                                                </div>
+                                                ${campaign.description ? `<p class="text-gray-400 text-sm mb-4">${campaign.description}</p>` : ''}
+                                                <div class="flex items-center gap-6 text-sm text-gray-400">
+                                                    <div>👁️ ${campaign.clicks || 0} clicks</div>
+                                                    <div>🔓 ${campaign.unlocks || 0} unlocks</div>
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button onclick="copyLink('${state.user.username}', '${campaign.slug}')" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition">
+                                                    🔗 Copy Link
+                                                </button>
+                                                <button onclick="navigate('unlock', {username: '${state.user.username}', slug: '${campaign.slug}'})" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm transition">
+                                                    View
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        // NEW CAMPAIGN PAGE
+        function NewCampaignPage() {
+            if (!state.user) {
+                navigate('signin');
+                return '';
+            }
+
+            const step = state.campaignStep || 1;
+            const formData = state.campaignFormData || {
+                title: '',
+                slug: '',
+                description: '',
+                rewardType: 'url',
+                rewardPayload: '',
+                actions: []
+            };
+
+            return `
+                <nav class="border-b border-white/10 glass sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-16">
+                            <button onclick="navigate('dashboard')" class="flex items-center space-x-2">
+                                <span class="text-2xl">🔒</span>
+                                <span class="text-xl font-bold">Content Locker</span>
+                            </button>
+                            <button onclick="navigate('dashboard')" class="text-gray-400 hover:text-white transition">
+                                ← Back to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <h1 class="text-3xl font-bold mb-8">Create New Campaign</h1>
+
+                    <!-- Progress Steps -->
+                    <div class="flex justify-between mb-8 overflow-x-auto">
+                        ${['Details', 'Reward', 'Actions', 'Review'].map((label, index) => `
+                            <div class="flex items-center ${index < 3 ? 'flex-1' : ''}">
+                                <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 flex-shrink-0 ${
+                                    step > index + 1 ? 'bg-green-500 border-green-500 text-white' :
+                                    step === index + 1 ? 'bg-purple-600 border-purple-600 text-white' :
+                                    'bg-slate-700 border-slate-600 text-gray-400'
+                                }">
+                                    ${step > index + 1 ? '✓' : index + 1}
+                                </div>
+                                <div class="ml-2 text-sm font-semibold text-gray-300 whitespace-nowrap">${label}</div>
+                                ${index < 3 ? `<div class="flex-1 h-1 mx-4 ${step > index + 1 ? 'bg-green-500' : 'bg-slate-700'}"></div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div id="campaignError" class="hidden bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6"></div>
+
+                    <div class="glass rounded-xl border border-white/10 p-8">
+                        ${step === 1 ? CampaignStep1(formData) : ''}
+                        ${step === 2 ? CampaignStep2(formData) : ''}
+                        ${step === 3 ? CampaignStep3(formData) : ''}
+                        ${step === 4 ? CampaignStep4(formData) : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function CampaignStep1(formData) {
+            return `
+                <h2 class="text-2xl font-bold mb-4">Campaign Details</h2>
+                <form onsubmit="handleCampaignStep1(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Campaign Title *</label>
+                        <input type="text" name="title" required value="${formData.title}" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Free Beat Pack">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">URL Slug *</label>
+                        <input type="text" name="slug" required value="${formData.slug}" pattern="[a-z0-9-]+" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="free-beat-pack">
+                        <p class="text-xs text-gray-500 mt-1">Your link: contentlocker.app/${state.user.username}/<span id="slugPreview">${formData.slug || 'slug'}</span></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Description (optional)</label>
+                        <textarea name="description" rows="3" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Get my exclusive beat pack with 10 royalty-free beats!">${formData.description}</textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                        Continue →
+                    </button>
+                </form>
+            `;
+        }
+
+        function CampaignStep2(formData) {
+            const rewardTypes = [
+                { type: 'url', icon: '🔗', label: 'URL / Link' },
+                { type: 'file', icon: '📁', label: 'File Download' },
+                { type: 'text', icon: '📝', label: 'Text / Code' },
+                { type: 'discord', icon: '💬', label: 'Discord Invite' },
+            ];
+
+            return `
+                <h2 class="text-2xl font-bold mb-4">What's the Reward?</h2>
+                <form onsubmit="handleCampaignStep2(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Reward Type *</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            ${rewardTypes.map(option => `
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="rewardType" value="${option.type}" ${formData.rewardType === option.type ? 'checked' : ''} class="hidden peer">
+                                    <div class="p-4 rounded-lg border-2 transition peer-checked:bg-purple-600/20 peer-checked:border-purple-500 bg-slate-700/30 border-slate-600 hover:border-slate-500">
+                                        <div class="text-3xl mb-2">${option.icon}</div>
+                                        <div class="font-semibold">${option.label}</div>
+                                    </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            ${formData.rewardType === 'text' ? 'Text/Code *' : 'URL *'}
+                        </label>
+                        ${formData.rewardType === 'text' ? `
+                            <textarea name="rewardPayload" required rows="4" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter your exclusive code or text here...">${formData.rewardPayload}</textarea>
+                        ` : `
+                            <input type="text" name="rewardPayload" required value="${formData.rewardPayload}" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="https://example.com/exclusive-content">
+                        `}
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="button" onclick="campaignPrevStep()" class="flex-1 bg-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-600 transition">
+                            ← Back
+                        </button>
+                        <button type="submit" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                            Continue →
+                        </button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function CampaignStep3(formData) {
+            return `
+                <h2 class="text-2xl font-bold mb-4">Unlock Actions</h2>
+                <div class="space-y-6">
+                    ${formData.actions && formData.actions.length > 0 ? `
+                        <div class="space-y-3">
+                            ${formData.actions.map((action, index) => {
+                                const platform = PLATFORMS.find(p => p.id === action.platform) || { icon: '🔗', name: action.platform };
+                                return `
+                                    <div class="bg-slate-700/30 rounded-lg border border-slate-600 p-4">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-2xl">${platform.icon}</span>
+                                                <span class="font-semibold">${platform.name}</span>
+                                            </div>
+                                            <button type="button" onclick="removeAction(${index})" class="text-red-400 hover:text-red-300">Remove</button>
+                                        </div>
+                                        <input type="text" value="${action.targetUrl}" onchange="updateAction(${index}, this.value)" placeholder="Enter your ${platform.name} URL" class="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : ''}
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Add Actions</label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-2">
+                            ${PLATFORMS.map(platform => `
+                                <button type="button" onclick="addAction('${platform.id}')" class="p-3 bg-slate-700/30 hover:bg-slate-600/50 border border-slate-600 rounded-lg transition text-left">
+                                    <div class="text-2xl mb-1">${platform.icon}</div>
+                                    <div class="text-xs font-semibold">${platform.name}</div>
+                                    <div class="text-xs text-gray-400">${platform.action}</div>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="button" onclick="campaignPrevStep()" class="flex-1 bg-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-600 transition">
+                            ← Back
+                        </button>
+                        <button type="button" onclick="campaignNextStep()" ${!formData.actions || formData.actions.length === 0 ? 'disabled' : ''} class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition disabled:opacity-50">
+                            Continue →
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function CampaignStep4(formData) {
+            return `
+                <h2 class="text-2xl font-bold mb-4">Review & Publish</h2>
+                <div class="space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <div class="text-sm text-gray-400 mb-1">Campaign Title</div>
+                            <div class="text-lg font-semibold">${formData.title}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-400 mb-1">Reward Type</div>
+                            <div class="capitalize">${formData.rewardType}</div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-400 mb-1">Unlock Actions</div>
+                            <div class="flex flex-wrap gap-2">
+                                ${formData.actions.map(action => {
+                                    const platform = PLATFORMS.find(p => p.id === action.platform) || { icon: '🔗', name: action.platform };
+                                    return `<span class="px-3 py-1 bg-purple-600/20 border border-purple-500/50 rounded-full text-sm text-purple-300">${platform.icon} ${platform.name}</span>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" id="requireEmail" ${formData.requireEmail ? 'checked' : ''} onchange="state.campaignFormData.requireEmail = this.checked" class="w-4 h-4 rounded border-gray-600 text-purple-600">
+                                <span>Require email to unlock</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="button" onclick="campaignPrevStep()" class="flex-1 bg-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-600 transition">
+                            ← Back
+                        </button>
+                        <button type="button" onclick="publishCampaign()" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                            Publish Campaign 🚀
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // UNLOCK PAGE (Public)
+        function UnlockPage() {
+            const { username, slug } = state.pageData;
+            const campaign = state.campaigns.find(c => c.slug === slug);
+            
+            if (!campaign) {
+                return `
+                    <div class="min-h-screen flex items-center justify-center px-4">
+                        <div class="max-w-md text-center">
+                            <div class="text-6xl mb-4">❌</div>
+                            <h1 class="text-3xl font-bold mb-4">Campaign Not Found</h1>
+                            <p class="text-gray-400 mb-6">This campaign doesn't exist or has been removed.</p>
+                            <button onclick="navigate('home')" class="bg-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">
+                                Go Home
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const unlockState = getUnlockState(campaign.id);
+            const progress = (unlockState.completedActions.length / campaign.actions.length) * 100;
+            const allComplete = unlockState.completedActions.length === campaign.actions.length;
+
+            return `
+                <div class="min-h-screen py-8 px-4">
+                    ${unlockState.showConfetti ? '<div class="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"><div class="text-9xl animate-bounce">🎉</div></div>' : ''}
+
+                    <div class="max-w-2xl mx-auto">
+                        <!-- Header -->
+                        <div class="text-center mb-8">
+                            <div class="flex items-center justify-center gap-2 mb-4">
+                                <span class="text-2xl">🔒</span>
+                                <span class="text-xl font-bold">Content Locker</span>
+                            </div>
+                            <p class="text-gray-400">by @${username}</p>
+                        </div>
+
+                        <!-- Campaign Card -->
+                        <div class="glass rounded-2xl border border-white/10 p-8 mb-6">
+                            <div class="w-full h-48 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl mb-6 flex items-center justify-center text-6xl">
+                                ${campaign.rewardType === 'file' ? '📁' : campaign.rewardType === 'url' ? '🔗' : campaign.rewardType === 'text' ? '📝' : '💬'}
+                            </div>
+
+                            <h1 class="text-3xl font-bold mb-4">${campaign.title}</h1>
+                            ${campaign.description ? `<p class="text-gray-300 mb-6">${campaign.description}</p>` : ''}
+
+                            <!-- Progress -->
+                            <div class="mb-6">
+                                <div class="flex justify-between text-sm text-gray-400 mb-2">
+                                    <span>Your Progress</span>
+                                    <span>${unlockState.completedActions.length}/${campaign.actions.length} completed</span>
+                                </div>
+                                <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500" style="width: ${progress}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="space-y-3 mb-6">
+                                ${campaign.actions.map((action, index) => {
+                                    const platform = PLATFORMS.find(p => p.id === action.platform) || { icon: '🔗', name: action.platform };
+                                    const isComplete = unlockState.completedActions.includes(index);
+                                    
+                                    return `
+                                        <div class="flex items-center justify-between p-4 rounded-xl border transition ${isComplete ? 'bg-green-500/10 border-green-500/50' : 'bg-slate-700/30 border-slate-600/50 hover:border-purple-500/50'}">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-3xl">${platform.icon}</span>
+                                                <div>
+                                                    <div class="font-semibold">${platform.name}</div>
+                                                    <div class="text-sm text-gray-400">${platform.action}</div>
+                                                </div>
+                                            </div>
+                                            ${isComplete ? `
+                                                <div class="flex items-center gap-2 text-green-400 font-semibold">
+                                                    <span>✓</span>
+                                                    <span>Done</span>
+                                                </div>
+                                            ` : `
+                                                <button onclick="completeUnlockAction('${campaign.id}', ${index}, '${action.targetUrl}')" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition">
+                                                    Complete
+                                                </button>
+                                            `}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+
+                            <!-- Email Capture -->
+                            ${campaign.requireEmail && !unlockState.unlocked && allComplete ? `
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Enter your email to unlock</label>
+                                    <input type="email" id="unlockEmail" placeholder="you@example.com" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                </div>
+                            ` : ''}
+
+                            <!-- Unlock Button / Reward -->
+                            ${!unlockState.unlocked ? `
+                                ${allComplete ? `
+                                    <button onclick="handleUnlock('${campaign.id}', ${campaign.requireEmail})" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                        🔓 Unlock Now
+                                    </button>
+                                ` : `
+                                    <div class="flex items-center justify-center gap-3 py-4 text-gray-400">
+                                        <span class="text-3xl">🔒</span>
+                                        <span class="font-semibold">Complete all actions to unlock</span>
+                                    </div>
+                                `}
+                            ` : `
+                                <div class="bg-gradient-to-r from-green-600/20 to-blue-600/20 border border-green-500/50 rounded-xl p-6">
+                                    <div class="text-center mb-4">
+                                        <div class="text-5xl mb-3">🎉</div>
+                                        <h2 class="text-2xl font-bold mb-2">Unlocked!</h2>
+                                        <p class="text-gray-300 mb-4">Here's your reward:</p>
+                                    </div>
+                                    ${campaign.rewardType === 'url' || campaign.rewardType === 'file' || campaign.rewardType === 'discord' ? `
+                                        <a href="${campaign.rewardPayload}" target="_blank" class="block w-full bg-white text-purple-600 py-3 rounded-lg font-bold text-center hover:bg-gray-100 transition">
+                                            ${campaign.rewardType === 'file' ? '📁 Download File' : campaign.rewardType === 'discord' ? '💬 Join Discord' : '🔗 Open Link'}
+                                        </a>
+                                    ` : `
+                                        <div class="bg-slate-900/50 rounded-lg p-4">
+                                            <pre class="whitespace-pre-wrap break-words font-mono text-sm">${campaign.rewardPayload}</pre>
+                                        </div>
+                                    `}
+                                </div>
+                            `}
+                        </div>
+
+                        <div class="text-center text-sm text-gray-500">
+                            Powered by <button onclick="navigate('home')" class="text-purple-400 hover:text-purple-300 font-semibold">Content Locker</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // PROFILE PAGE
+        function ProfilePage() {
+            const { username } = state.pageData;
+            const user = state.user && state.user.username === username ? state.user : { name: username, username };
+            const userCampaigns = state.campaigns.filter(c => c.status === 'active');
+
+            return `
+                <div class="min-h-screen py-12 px-4">
+                    <div class="max-w-2xl mx-auto">
+                        <!-- Profile Header -->
+                        <div class="text-center mb-8">
+                            <div class="w-24 h-24 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full mx-auto mb-4 flex items-center justify-center text-4xl">
+                                ${user.name[0].toUpperCase()}
+                            </div>
+                            <h1 class="text-3xl font-bold mb-2">${user.name}</h1>
+                            <p class="text-gray-400 mb-4">@${user.username}</p>
+                            <p class="text-gray-300 max-w-md mx-auto">Check out my exclusive content!</p>
+                        </div>
+
+                        <!-- Campaigns -->
+                        <div class="space-y-3">
+                            ${userCampaigns.length === 0 ? `
+                                <div class="text-center py-12 text-gray-400">
+                                    <p>No links available yet</p>
+                                </div>
+                            ` : userCampaigns.map(campaign => `
+                                <button onclick="navigate('unlock', {username: '${user.username}', slug: '${campaign.slug}'})" class="w-full block glass hover:bg-slate-700/50 border border-white/10 hover:border-purple-500/50 rounded-2xl p-6 transition group">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                                            ${campaign.rewardType === 'file' ? '📁' : campaign.rewardType === 'url' ? '🔗' : campaign.rewardType === 'text' ? '📝' : '💬'}
+                                        </div>
+                                        <div class="flex-1 text-left">
+                                            <h3 class="text-lg font-semibold group-hover:text-purple-400 transition">${campaign.title}</h3>
+                                            ${campaign.description ? `<p class="text-sm text-gray-400 mt-1 line-clamp-1">${campaign.description}</p>` : ''}
+                                        </div>
+                                        <div class="text-purple-400 group-hover:translate-x-1 transition">→</div>
+                                    </div>
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        <div class="text-center mt-12 text-sm text-gray-500">
+                            <button onclick="navigate('home')" class="text-purple-400 hover:text-purple-300 font-semibold">
+                                Create your own Content Locker
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== EVENT HANDLERS ====================
+        
+        function handleDemoAction(index) {
+            if (index === state.demoProgress) {
+                state.demoProgress++;
+                render();
+            }
+        }
+
+        function handleSignUp(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            state.user = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                username: formData.get('username'),
+                plan: 'free'
+            };
+            
+            saveState();
+            navigate('dashboard');
+        }
+
+        function handleSignIn(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // For demo, just check if user exists
+            if (state.user && state.user.email === formData.get('email')) {
+                navigate('dashboard');
+            } else {
+                document.getElementById('signinError').textContent = 'Invalid credentials. Try signing up first!';
+                document.getElementById('signinError').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                state.user = null;
+                state.campaigns = [];
+                saveState();
+                navigate('home');
+            }
+        }
+
+        function copyLink(username, slug) {
+            const url = `${window.location.origin}/#/u/${username}/${slug}`;
+            navigator.clipboard.writeText(url);
+            alert('Link copied to clipboard!');
+        }
+
+        // Campaign creation handlers
+        function handleCampaignStep1(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            state.campaignFormData = {
+                ...state.campaignFormData,
+                title: formData.get('title'),
+                slug: formData.get('slug'),
+                description: formData.get('description'),
+            };
+            
+            state.campaignStep = 2;
+            render();
+        }
+
+        function handleCampaignStep2(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            state.campaignFormData = {
+                ...state.campaignFormData,
+                rewardType: formData.get('rewardType'),
+                rewardPayload: formData.get('rewardPayload'),
+            };
+            
+            state.campaignStep = 3;
+            render();
+        }
+
+        function campaignPrevStep() {
+            state.campaignStep = Math.max(1, (state.campaignStep || 1) - 1);
+            render();
+        }
+
+        function campaignNextStep() {
+            state.campaignStep = Math.min(4, (state.campaignStep || 1) + 1);
+            render();
+        }
+
+        function addAction(platformId) {
+            if (!state.campaignFormData.actions) {
+                state.campaignFormData.actions = [];
+            }
+            
+            const platform = PLATFORMS.find(p => p.id === platformId);
+            state.campaignFormData.actions.push({
+                platform: platformId,
+                targetUrl: '',
+                actionType: platform.action.toLowerCase()
+            });
+            
+            render();
+        }
+
+        function removeAction(index) {
+            state.campaignFormData.actions.splice(index, 1);
+            render();
+        }
+
+        function updateAction(index, url) {
+            state.campaignFormData.actions[index].targetUrl = url;
+        }
+
+        function publishCampaign() {
+            const campaign = {
+                id: Date.now().toString(),
+                ...state.campaignFormData,
+                status: 'active',
+                clicks: 0,
+                unlocks: 0,
+                createdAt: new Date().toISOString()
+            };
+            
+            state.campaigns.push(campaign);
+            saveState();
+            
+            state.campaignStep = 1;
+            state.campaignFormData = null;
+            navigate('dashboard');
+        }
+
+        // Unlock page handlers
+        function getUnlockState(campaignId) {
+            const saved = localStorage.getItem(`unlock-${campaignId}`);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            return {
+                completedActions: [],
+                unlocked: false,
+                email: '',
+                showConfetti: false
+            };
+        }
+
+        function saveUnlockState(campaignId, unlockState) {
+            localStorage.setItem(`unlock-${campaignId}`, JSON.stringify(unlockState));
+        }
+
+        function completeUnlockAction(campaignId, actionIndex, targetUrl) {
+            window.open(targetUrl, '_blank');
+            
+            setTimeout(() => {
+                const unlockState = getUnlockState(campaignId);
+                if (!unlockState.completedActions.includes(actionIndex)) {
+                    unlockState.completedActions.push(actionIndex);
+                    saveUnlockState(campaignId, unlockState);
+                    
+                    // Update campaign clicks
+                    const campaign = state.campaigns.find(c => c.id === campaignId);
+                    if (campaign) {
+                        campaign.clicks = (campaign.clicks || 0) + 1;
+                        saveState();
+                    }
+                    
+                    render();
+                }
+            }, 2000);
+        }
+
+        function handleUnlock(campaignId, requireEmail) {
+            const unlockState = getUnlockState(campaignId);
+            
+            if (requireEmail) {
+                const email = document.getElementById('unlockEmail')?.value;
+                if (!email) {
+                    alert('Please enter your email to unlock');
+                    return;
+                }
+                unlockState.email = email;
+            }
+            
+            unlockState.unlocked = true;
+            unlockState.showConfetti = true;
+            saveUnlockState(campaignId, unlockState);
+            
+            // Update campaign unlocks
+            const campaign = state.campaigns.find(c => c.id === campaignId);
+            if (campaign) {
+                campaign.unlocks = (campaign.unlocks || 0) + 1;
+                saveState();
+            }
+            
+            render();
+            
+            setTimeout(() => {
+                unlockState.showConfetti = false;
+                saveUnlockState(campaignId, unlockState);
+                render();
+            }, 3000);
+        }
+
+        // ==================== RENDER ====================
+        function render() {
+            const app = document.getElementById('app');
+            let html = '';
+
+            switch (state.currentPage) {
+                case 'home':
+                    html = HomePage();
+                    break;
+                case 'signup':
+                    html = SignUpPage();
+                    break;
+                case 'signin':
+                    html = SignInPage();
+                    break;
+                case 'dashboard':
+                    html = DashboardPage();
+                    break;
+                case 'newCampaign':
+                    html = NewCampaignPage();
+                    break;
+                case 'unlock':
+                    html = UnlockPage();
+                    break;
+                case 'profile':
+                    html = ProfilePage();
+                    break;
+                default:
+                    html = HomePage();
+            }
+
+            app.innerHTML = html;
+            window.scrollTo(0, 0);
+        }
+
+        // ==================== INIT ====================
+        loadState();
+        
+        // Handle hash routing
+        function handleHashChange() {
+            const hash = window.location.hash.slice(1);
+            if (hash.startsWith('/u/')) {
+                const [, , username, slug] = hash.split('/');
+                if (slug) {
+                    navigate('unlock', { username, slug });
+                } else {
+                    navigate('profile', { username });
+                }
+            }
+        }
+
+        window.addEventListener('hashchange', handleHashChange);
+        handleHashChange();
+
+        // Initial render
+        if (!state.currentPage || state.currentPage === 'home') {
+            render();
+        }
+    </script>
+</body>
+</html>

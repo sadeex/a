@@ -241,6 +241,56 @@
         .completed-badge {
             animation: popIn 0.38s ease both;
         }
+        .ad-panel {
+            width: 100%;
+            margin: 0 auto 1.25rem;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 1rem;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(88, 28, 135, 0.22));
+            box-shadow: 0 16px 45px rgba(15, 23, 42, 0.28);
+            text-align: center;
+            overflow: hidden;
+        }
+        .ad-panel.compact-ad {
+            margin: 0.25rem auto 1.25rem;
+        }
+        .ad-label {
+            display: block;
+            margin-bottom: 0.45rem;
+            color: rgba(203, 213, 225, 0.72);
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .ad-frame-holder {
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ad-frame-holder.ad-320 {
+            min-height: 54px;
+        }
+        .ad-frame-holder.ad-script {
+            min-height: 80px;
+        }
+        .ad-frame-holder iframe {
+            display: block;
+            max-width: 100%;
+            margin: 0 auto;
+            border: 0;
+            border-radius: 0.5rem;
+            background: transparent;
+        }
+        .ad-fallback {
+            color: rgba(148, 163, 184, 0.9);
+            font-size: 0.8rem;
+        }
+        @media (max-width: 520px) {
+            .ad-panel { padding: 0.6rem; }
+            .ad-frame-holder iframe { transform: scale(0.88); transform-origin: center; }
+        }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
@@ -725,6 +775,99 @@
             { id: 'telegram', name: 'Telegram', icon: '✈️', action: 'Join Channel' },
             { id: 'whatsapp', name: 'WhatsApp', icon: '💚', action: 'Join Group' },
         ];
+
+        // ==================== SHORT URL PAGE AD UNITS ====================
+        const SHORT_URL_AD_UNITS = {
+            top: {
+                containerId: 'shortUrlAdTop',
+                width: 468,
+                height: 60,
+                holderClass: 'ad-468',
+                options: {
+                    key: '0b2e503c86caa51df286e1aec28ec081',
+                    format: 'iframe',
+                    height: 60,
+                    width: 468,
+                    params: {}
+                },
+                invokeSrc: 'https://hecticwelcomingassociation.com/0b2e503c86caa51df286e1aec28ec081/invoke.js'
+            },
+            middle: {
+                containerId: 'shortUrlAdMiddle',
+                width: 320,
+                height: 50,
+                holderClass: 'ad-320',
+                options: {
+                    key: '163e208599fb1cbb5ecdb28509cbaed5',
+                    format: 'iframe',
+                    height: 50,
+                    width: 320,
+                    params: {}
+                },
+                invokeSrc: 'https://hecticwelcomingassociation.com/163e208599fb1cbb5ecdb28509cbaed5/invoke.js'
+            },
+            bottom: {
+                containerId: 'shortUrlAdBottom',
+                width: 468,
+                height: 90,
+                holderClass: 'ad-script',
+                scriptSrc: 'https://hecticwelcomingassociation.com/dd/3e/63/dd3e63cb85c7f37892c476ea203734ac.js'
+            }
+        };
+
+        function buildAdScriptTag(src) {
+            return '<scr' + 'ipt src="' + src + '"></scr' + 'ipt>';
+        }
+
+        function buildInlineAdScript(code) {
+            return '<scr' + 'ipt>' + code + '</scr' + 'ipt>';
+        }
+
+        function buildAdFrameHtml(unit) {
+            const styles = `
+                <style>
+                    html, body { margin: 0; padding: 0; width: 100%; min-height: ${unit.height}px; background: transparent; overflow: hidden; }
+                    body { display: flex; align-items: center; justify-content: center; }
+                    iframe, ins { max-width: 100% !important; }
+                </style>
+            `;
+
+            let scripts = '';
+            if (unit.options) {
+                scripts += buildInlineAdScript('var atOptions = ' + JSON.stringify(unit.options) + ';');
+                scripts += buildAdScriptTag(unit.invokeSrc);
+            }
+            if (unit.scriptSrc) {
+                scripts += buildAdScriptTag(unit.scriptSrc);
+            }
+
+            return `<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">${styles}</head><body>${scripts}</body></html>`;
+        }
+
+        function loadShortUrlAds() {
+            if (state.currentPage !== 'unlock') return;
+
+            Object.values(SHORT_URL_AD_UNITS).forEach(unit => {
+                const container = document.getElementById(unit.containerId);
+                if (!container) return;
+
+                container.innerHTML = '';
+                const iframe = document.createElement('iframe');
+                iframe.title = 'Advertisement';
+                iframe.width = String(unit.width);
+                iframe.height = String(unit.height);
+                iframe.loading = 'lazy';
+                iframe.referrerPolicy = 'no-referrer-when-downgrade';
+                iframe.scrolling = 'no';
+                iframe.style.width = Math.min(unit.width, 468) + 'px';
+                iframe.style.maxWidth = '100%';
+                iframe.style.height = unit.height + 'px';
+                iframe.style.border = '0';
+                iframe.style.overflow = 'hidden';
+                iframe.srcdoc = buildAdFrameHtml(unit);
+                container.appendChild(iframe);
+            });
+        }
 
         // ==================== PAGES ====================
 
@@ -1543,6 +1686,14 @@
                             <p class="text-gray-400">by @${creatorUsername}</p>
                         </div>
 
+                        <!-- Short URL Page Ad: Top Banner -->
+                        <div class="ad-panel">
+                            <span class="ad-label">Advertisement</span>
+                            <div id="shortUrlAdTop" class="ad-frame-holder ad-468">
+                                <span class="ad-fallback">Loading ad...</span>
+                            </div>
+                        </div>
+
                         <!-- Campaign Card -->
                         <div class="glass rounded-2xl border border-white/10 p-8 mb-6">
                             <div class="reward-hero w-full h-48 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl mb-6 flex items-center justify-center text-6xl">
@@ -1560,6 +1711,14 @@
                                 </div>
                                 <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
                                     <div class="h-full bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-500" style="width: ${progress}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Short URL Page Ad: Inline Banner -->
+                            <div class="ad-panel compact-ad">
+                                <span class="ad-label">Advertisement</span>
+                                <div id="shortUrlAdMiddle" class="ad-frame-holder ad-320">
+                                    <span class="ad-fallback">Loading ad...</span>
                                 </div>
                             </div>
 
@@ -1654,6 +1813,14 @@
                                     `}
                                 </div>
                             `}
+                        </div>
+
+                        <!-- Short URL Page Ad: Bottom Unit -->
+                        <div class="ad-panel">
+                            <span class="ad-label">Advertisement</span>
+                            <div id="shortUrlAdBottom" class="ad-frame-holder ad-script">
+                                <span class="ad-fallback">Loading ad...</span>
+                            </div>
                         </div>
 
                         <div class="text-center text-sm text-gray-500">
@@ -2543,6 +2710,7 @@
             }
 
             app.innerHTML = html;
+            loadShortUrlAds();
             if (options.preserveScroll) {
                 window.scrollTo(0, previousScrollY);
             } else {
@@ -2600,5 +2768,5 @@
             render();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163ea190ba5b77e',t:'MTc4MzIyODc2Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163f15dbad924d1',t:'MTc4MzIyOTA2MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

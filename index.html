@@ -646,15 +646,34 @@
             return slugs;
         }
 
+        function randomBase36(length = 8) {
+            const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let output = '';
+
+            if (window.crypto && window.crypto.getRandomValues) {
+                const values = new Uint8Array(length);
+                window.crypto.getRandomValues(values);
+                values.forEach(value => output += alphabet[value % alphabet.length]);
+                return output;
+            }
+
+            while (output.length < length) {
+                output += Math.random().toString(36).slice(2);
+            }
+            return output.slice(0, length);
+        }
+
+        function isShortCampaignSlug(slug) {
+            return /^c-[a-z0-9]{8,10}$/i.test(String(slug || ''));
+        }
+
         function generateUniqueCampaignSlug(title = 'link', ignoreCampaignId = '') {
             const existingSlugs = getExistingCampaignSlugs(ignoreCampaignId);
-            const base = slugifyTitle(title);
             let candidate = '';
 
             do {
-                const timeCode = Date.now().toString(36);
-                const randomCode = Math.random().toString(36).slice(2, 7);
-                candidate = `${base}-${timeCode}-${randomCode}`;
+                // Short, unique code for the address bar. Example: c-a8k2m9px
+                candidate = `c-${randomBase36(8)}`;
             } while (existingSlugs.has(candidate));
 
             return candidate;
@@ -664,7 +683,7 @@
             const existingSlugs = getExistingCampaignSlugs(campaign?.id || '');
             const currentSlug = String(campaign?.slug || '').trim();
 
-            if (currentSlug && !existingSlugs.has(currentSlug)) {
+            if (currentSlug && isShortCampaignSlug(currentSlug) && !existingSlugs.has(currentSlug)) {
                 return { ...campaign, slug: currentSlug };
             }
 
@@ -721,25 +740,20 @@
         }
 
         function getShareableLink(username, campaign) {
-            const payload = {
-                id: campaign.id,
-                username,
-                title: campaign.title,
-                slug: campaign.slug,
-                description: campaign.description,
-                rewardType: campaign.rewardType,
-                rewardPayload: campaign.rewardPayload,
-                actions: campaign.actions,
-                requireEmail: !!campaign.requireEmail
-            };
-            return `${getBaseUrl()}#/c/${encodeShareData(payload)}`;
+            const shareCampaign = ensureUniqueCampaignSlug({
+                ...campaign,
+                ownerUsername: campaign.ownerUsername || username
+            });
+            return `${getBaseUrl()}#/s/${encodeURIComponent(shareCampaign.slug)}`;
         }
 
         function buildSharedCampaign(payload) {
-            return {
+            return ensureUniqueCampaignSlug({
                 id: payload.id || `shared-${simpleHash(JSON.stringify(payload))}`,
+                username: payload.username || payload.ownerUsername || 'creator',
+                ownerUsername: payload.ownerUsername || payload.username || 'creator',
                 title: payload.title || 'Locked Content',
-                slug: payload.slug || 'shared-link',
+                slug: payload.slug || '',
                 description: payload.description || '',
                 rewardType: payload.rewardType || 'url',
                 rewardPayload: payload.rewardPayload || '',
@@ -749,17 +763,114 @@
                 clicks: 0,
                 unlocks: 0,
                 createdAt: payload.createdAt || new Date().toISOString()
-            };
+            });
+        }
+
+        function findCampaignBySlug(slug) {
+            const targetSlug = decodeURIComponent(String(slug || '')).trim();
+            if (!targetSlug) return null;
+
+            const localCampaign = (state.campaigns || []).find(campaign => campaign.slug === targetSlug);
+            if (localCampaign) {
+                return {
+                    username: localCampaign.ownerUsername || state.user?.username || 'creator',
+                    campaign: ensureUniqueCampaignSlug(localCampaign)
+                };
+            }
+
+            const storeCampaign = getAdminStore().campaigns.find(campaign => campaign.slug === targetSlug);
+            if (storeCampaign) {
+                return {
+                    username: storeCampaign.ownerUsername || storeCampaign.username || 'creator',
+                    campaign: ensureUniqueCampaignSlug(storeCampaign)
+                };
+            }
+
+            return null;
+        }
+
+        async function fetchCampaignBySlugFromCloud(slug) {
+            if (!isFirebaseReady()) return null;
+            const targetSlug = decodeURIComponent(String(slug || '')).trim();
+            if (!targetSlug) return null;
+
+            try {
+                const snapshot = await window.firebaseDB.collection('campaigns').where('slug', '==', targetSlug).limit(1).get();
+                if (snapshot.empty) return null;
+
+                const doc = snapshot.docs[0];
+                const campaign = ensureUniqueCampaignSlug({ id: doc.data().id || doc.id, ...doc.data() });
+                const store = getAdminStore();
+                const existingIndex = store.campaigns.findIndex(item => item.id === campaign.id && item.ownerUsername === campaign.ownerUsername);
+
+                if (existingIndex >= 0) {
+                    store.campaigns[existingIndex] = campaign;
+                } else {
+                    store.campaigns.push(campaign);
+                }
+                saveAdminStore(store);
+
+                return {
+                    username: campaign.ownerUsername || campaign.username || 'creator',
+                    campaign
+                };
+            } catch (error) {
+                console.error('Could not load short URL from Firebase:', error);
+                setCloudStatus('error', error.message || String(error));
+                return null;
+            }
+        }
+
+        async function openShortUrl(slug) {
+            const localResult = findCampaignBySlug(slug);
+            if (localResult) {
+                navigate('unlock', {
+                    username: localResult.username,
+                    slug: localResult.campaign.slug,
+                    sharedCampaign: localResult.campaign
+                });
+                return;
+            }
+
+            state.currentPage = 'unlockLoading';
+            state.pageData = { slug };
+            render();
+
+            const cloudResult = await fetchCampaignBySlugFromCloud(slug);
+            if (cloudResult) {
+                navigate('unlock', {
+                    username: cloudResult.username,
+                    slug: cloudResult.campaign.slug,
+                    sharedCampaign: cloudResult.campaign
+                });
+                return;
+            }
+
+            navigate('unlock', { username: 'creator', slug });
+        }
+
+        function updateBrowserUrlForPage(page, data = {}) {
+            if (page !== 'unlock' || !data.slug) return;
+            const targetHash = `#/s/${encodeURIComponent(data.slug)}`;
+            if (window.location.hash === targetHash) return;
+
+            if (window.history && window.history.pushState) {
+                window.history.pushState({ page, slug: data.slug }, '', targetHash);
+            } else {
+                window.location.hash = targetHash;
+            }
         }
 
         // ==================== NAVIGATION ====================
         function navigate(page, data = {}) {
             state.currentPage = page;
             state.pageData = data;
+            updateBrowserUrlForPage(page, data);
             render();
         }
 
         // ==================== SUPPORTED PLATFORMS ====================
+
         const PLATFORMS = [
             { id: 'visitpage', name: 'Visit a Page', icon: '🌐', action: 'Visit Page' },
             { id: 'youtube', name: 'YouTube', icon: '📺', action: 'Subscribe' },
@@ -1646,11 +1757,26 @@
             `;
         }
 
+        // SHORT URL LOADING PAGE
+        function UnlockLoadingPage() {
+            const slug = state.pageData?.slug || '';
+            return `
+                <div class="min-h-screen flex items-center justify-center px-4 py-12">
+                    <div class="max-w-md w-full text-center glass rounded-2xl border border-white/10 p-8">
+                        <div class="mini-spinner mx-auto mb-5" style="width: 2.5rem; height: 2.5rem;"></div>
+                        <h1 class="text-3xl font-bold mb-3">Loading Content...</h1>
+                        <p class="text-gray-400 mb-4">Checking this short URL:</p>
+                        <div class="bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-3 text-purple-300 break-all">#/s/${escapeHtml(slug)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         // UNLOCK PAGE (Public)
         function UnlockPage() {
             const { username, slug, sharedCampaign } = state.pageData;
             const campaign = sharedCampaign || state.campaigns.find(c => c.slug === slug);
-            const creatorUsername = username || sharedCampaign?.username || 'creator';
+            const creatorUsername = username || sharedCampaign?.ownerUsername || sharedCampaign?.username || campaign?.ownerUsername || 'creator';
             
             if (!campaign) {
                 return `
@@ -2376,8 +2502,12 @@
         }
 
         function copyLink(username, slug) {
-            const campaign = state.campaigns.find(c => c.slug === slug);
-            const url = campaign ? getShareableLink(username, campaign) : `${getBaseUrl()}#/u/${username}/${slug}`;
+            let campaign = state.campaigns.find(c => c.slug === slug);
+            if (campaign) {
+                campaign = ensureUniqueCampaignSlug(campaign);
+                saveCampaignEverywhere(username, campaign.id, campaign);
+            }
+            const url = campaign ? getShareableLink(username, campaign) : `${getBaseUrl()}#/s/${encodeURIComponent(slug)}`;
             copyTextToClipboard(url);
         }
 
@@ -2693,6 +2823,9 @@
                 case 'unlock':
                     html = UnlockPage();
                     break;
+                case 'unlockLoading':
+                    html = UnlockLoadingPage();
+                    break;
                 case 'profile':
                     html = ProfilePage();
                     break;
@@ -2731,6 +2864,10 @@
         // Handle hash routing
         function handleHashChange() {
             const hash = window.location.hash.slice(1);
+            if (hash.startsWith('/s/')) {
+                openShortUrl(hash.slice(3));
+                return;
+            }
             if (hash === '/admin' || hash === '/admin/login') {
                 navigate(state.adminLoggedIn ? 'adminDashboard' : 'adminLogin');
                 return;
@@ -2761,6 +2898,7 @@
         }
 
         window.addEventListener('hashchange', handleHashChange);
+        window.addEventListener('popstate', handleHashChange);
         handleHashChange();
 
         // Initial render
@@ -2768,5 +2906,5 @@
             render();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163f15dbad924d1',t:'MTc4MzIyOTA2MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163fd52990aaed1',t:'MTc4MzIyOTU1MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

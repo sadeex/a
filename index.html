@@ -278,6 +278,9 @@
                 const data = JSON.parse(saved);
                 state.user = data.user;
                 state.campaigns = data.campaigns || [];
+                if (state.user) {
+                    state.campaigns = state.campaigns.map(campaign => ensureUniqueCampaignSlug(campaign));
+                }
             }
             state.adminLoggedIn = localStorage.getItem('contentLockerAdminSession') === 'true';
             if (state.user) {
@@ -287,6 +290,9 @@
 
         // Save state to localStorage
         function saveState() {
+            if (Array.isArray(state.campaigns) && state.campaigns.length) {
+                state.campaigns = state.campaigns.map(campaign => ensureUniqueCampaignSlug(campaign));
+            }
             localStorage.setItem('contentLocker', JSON.stringify({
                 user: state.user,
                 campaigns: state.campaigns
@@ -338,7 +344,7 @@
             }
 
             const currentCampaigns = (state.campaigns || []).map(campaign => ({
-                ...campaign,
+                ...ensureUniqueCampaignSlug(campaign),
                 ownerUsername: state.user.username,
                 ownerName: state.user.name || state.user.username,
                 ownerEmail: state.user.email || ''
@@ -354,18 +360,19 @@
 
         function getAdminCampaign(ownerUsername, campaignId) {
             const store = getAdminStore();
-            return store.campaigns.find(campaign => campaign.ownerUsername === ownerUsername && campaign.id === campaignId);
+            const campaign = store.campaigns.find(campaign => campaign.ownerUsername === ownerUsername && campaign.id === campaignId);
+            return campaign ? ensureUniqueCampaignSlug(campaign) : campaign;
         }
 
         function saveCampaignEverywhere(ownerUsername, campaignId, updatedCampaign) {
             const store = getAdminStore();
             const campaignIndex = store.campaigns.findIndex(campaign => campaign.ownerUsername === ownerUsername && campaign.id === campaignId);
-            const campaignToSave = {
+            const campaignToSave = ensureUniqueCampaignSlug({
                 ...updatedCampaign,
                 id: campaignId,
                 ownerUsername,
                 updatedAt: new Date().toISOString()
-            };
+            });
 
             if (campaignIndex >= 0) {
                 store.campaigns[campaignIndex] = campaignToSave;
@@ -467,6 +474,7 @@
 
         async function cloudSaveCampaign(ownerUsername, campaign) {
             if (!isFirebaseReady() || !ownerUsername || !campaign || !campaign.id) return;
+            campaign = ensureUniqueCampaignSlug(campaign);
             const campaignRecord = {
                 ...campaign,
                 ownerUsername,
@@ -560,6 +568,57 @@
                 if (state.currentPage === 'adminDashboard') render({ preserveScroll: true });
                 if (showAlert) alert('Could not refresh Firebase data: ' + (error.message || error));
             }
+        }
+
+
+        // ==================== UNIQUE LINK URL HELPERS ====================
+        function slugifyTitle(value) {
+            return String(value || 'link')
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 32) || 'link';
+        }
+
+        function getExistingCampaignSlugs(ignoreCampaignId = '') {
+            const slugs = new Set();
+            const addSlug = campaign => {
+                if (!campaign || campaign.id === ignoreCampaignId || !campaign.slug) return;
+                slugs.add(String(campaign.slug));
+            };
+
+            (state.campaigns || []).forEach(addSlug);
+            getAdminStore().campaigns.forEach(addSlug);
+            return slugs;
+        }
+
+        function generateUniqueCampaignSlug(title = 'link', ignoreCampaignId = '') {
+            const existingSlugs = getExistingCampaignSlugs(ignoreCampaignId);
+            const base = slugifyTitle(title);
+            let candidate = '';
+
+            do {
+                const timeCode = Date.now().toString(36);
+                const randomCode = Math.random().toString(36).slice(2, 7);
+                candidate = `${base}-${timeCode}-${randomCode}`;
+            } while (existingSlugs.has(candidate));
+
+            return candidate;
+        }
+
+        function ensureUniqueCampaignSlug(campaign) {
+            const existingSlugs = getExistingCampaignSlugs(campaign?.id || '');
+            const currentSlug = String(campaign?.slug || '').trim();
+
+            if (currentSlug && !existingSlugs.has(currentSlug)) {
+                return { ...campaign, slug: currentSlug };
+            }
+
+            return {
+                ...campaign,
+                slug: generateUniqueCampaignSlug(campaign?.title || 'link', campaign?.id || '')
+            };
         }
 
         // ==================== NO-LOGIN / SHARE HELPERS ====================
@@ -1206,7 +1265,6 @@
             const step = state.campaignStep || 1;
             const formData = state.campaignFormData || {
                 title: '',
-                slug: '',
                 description: '',
                 rewardType: 'url',
                 rewardPayload: '',
@@ -1272,10 +1330,14 @@
                         <input type="text" name="title" required value="${formData.title}" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Free Beat Pack">
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">URL Slug *</label>
-                        <input type="text" name="slug" required value="${formData.slug}" pattern="[a-z0-9-]+" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="free-beat-pack">
-                        <p class="text-xs text-gray-500 mt-1">Your guest username: @${state.user.username}. A shareable link will be generated after publishing.</p>
+                    <div class="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl">✨</span>
+                            <div>
+                                <div class="font-semibold text-purple-200 mb-1">Unique URL is created automatically</div>
+                                <p class="text-sm text-gray-400">No URL slug needed. After publishing, this link gets its own unique share URL that will not duplicate another user or admin link.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -1396,6 +1458,11 @@
                         <div>
                             <div class="text-sm text-gray-400 mb-1">Campaign Title</div>
                             <div class="text-lg font-semibold">${formData.title}</div>
+                        </div>
+
+                        <div class="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+                            <div class="text-sm text-purple-200 font-semibold mb-1">Unique URL</div>
+                            <div class="text-sm text-gray-400">Generated automatically after publishing — no slug required.</div>
                         </div>
 
                         <div>
@@ -1696,8 +1763,12 @@
             syncCurrentWorkspaceToAdminStore();
             const store = getAdminStore();
             const filterUser = state.pageData?.filterUser || '';
+            const normalizedCampaigns = [...store.campaigns].map(campaign => ensureUniqueCampaignSlug(campaign));
+            if (JSON.stringify(normalizedCampaigns) !== JSON.stringify(store.campaigns)) {
+                saveAdminStore({ ...store, campaigns: normalizedCampaigns });
+            }
             const users = [...store.users].sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || ''));
-            const campaigns = [...store.campaigns].sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+            const campaigns = normalizedCampaigns.sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
             const visibleCampaigns = filterUser ? campaigns.filter(campaign => campaign.ownerUsername === filterUser) : campaigns;
             const activeCount = campaigns.filter(campaign => campaign.status === 'active').length;
 
@@ -1805,7 +1876,7 @@
                                                     <div class="text-sm text-purple-300 mb-2">Owner: @${escapeHtml(campaign.ownerUsername || 'unknown')}</div>
                                                     ${campaign.description ? `<p class="text-gray-400 text-sm mb-3">${escapeHtml(campaign.description)}</p>` : ''}
                                                     <div class="grid sm:grid-cols-2 gap-2 text-xs text-gray-400">
-                                                        <div>Slug: <span class="text-gray-300">${escapeHtml(campaign.slug || '')}</span></div>
+                                                        <div>Unique code: <span class="text-gray-300">${escapeHtml(campaign.slug || '')}</span></div>
                                                         <div>Reward: <span class="text-gray-300 capitalize">${escapeHtml(campaign.rewardType || 'url')}</span></div>
                                                         <div>Actions: <span class="text-gray-300">${(campaign.actions || []).length}</span></div>
                                                         <div>Stats: 👁️ ${campaign.clicks || 0} / 🔓 ${campaign.unlocks || 0}</div>
@@ -1878,8 +1949,11 @@
                                 <input type="text" name="title" required value="${escapeAttr(campaign.title || '')}" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">URL Slug</label>
-                                <input type="text" name="slug" required value="${escapeAttr(campaign.slug || '')}" pattern="[a-z0-9-]+" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Unique Link URL</label>
+                                <div class="w-full px-4 py-3 bg-slate-900/60 border border-slate-600 rounded-lg text-purple-200 text-sm break-all">
+                                    ${escapeHtml(getShareableLink(ownerUsername, ensureUniqueCampaignSlug(campaign)))}
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Auto-generated and protected from duplicates.</p>
                             </div>
                         </div>
 
@@ -2042,6 +2116,7 @@
                 alert('Campaign not found.');
                 return;
             }
+            saveCampaignEverywhere(ownerUsername, campaignId, campaign);
             copyTextToClipboard(getShareableLink(ownerUsername, campaign));
         }
 
@@ -2069,17 +2144,17 @@
                 });
             }
 
-            const updatedCampaign = {
+            const updatedCampaign = ensureUniqueCampaignSlug({
                 ...existingCampaign,
                 title: String(formData.get('title') || '').trim(),
-                slug: String(formData.get('slug') || '').trim(),
+                slug: existingCampaign.slug || '',
                 description: String(formData.get('description') || '').trim(),
                 rewardType: String(formData.get('rewardType') || 'url'),
                 rewardPayload: String(formData.get('rewardPayload') || '').trim(),
                 status: String(formData.get('status') || 'active'),
                 requireEmail: formData.get('requireEmail') === 'on',
                 actions
-            };
+            });
 
             saveCampaignEverywhere(ownerUsername, campaignId, updatedCampaign);
             alert('Link updated successfully.');
@@ -2172,7 +2247,6 @@
             state.campaignFormData = {
                 ...state.campaignFormData,
                 title: formData.get('title'),
-                slug: formData.get('slug'),
                 description: formData.get('description'),
             };
             
@@ -2231,14 +2305,16 @@
 
         function publishCampaign() {
             ensureGuestUser();
-            const campaign = {
-                id: Date.now().toString(),
+            const campaignId = Date.now().toString();
+            const campaign = ensureUniqueCampaignSlug({
+                id: campaignId,
                 ...state.campaignFormData,
+                slug: generateUniqueCampaignSlug(state.campaignFormData?.title || 'link', campaignId),
                 status: 'active',
                 clicks: 0,
                 unlocks: 0,
                 createdAt: new Date().toISOString()
-            };
+            });
             
             state.campaigns.push(campaign);
             saveState();
@@ -2521,5 +2597,5 @@
             render();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163cd7f0b055138',t:'MTc4MzIyNzU5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163e009dc4daed1',t:'MTc4MzIyODM1MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

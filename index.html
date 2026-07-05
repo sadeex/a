@@ -17,6 +17,44 @@
             }
         }
     </script>
+    <!-- Firebase SDK (compat version keeps this single-file app working with inline onclick handlers) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAcV9Fb7urkX1WAq2z6YZfqu5mWEYkbUr0",
+            authDomain: "sdff-30807.firebaseapp.com",
+            projectId: "sdff-30807",
+            storageBucket: "sdff-30807.firebasestorage.app",
+            messagingSenderId: "903141750845",
+            appId: "1:903141750845:web:7e016a754a529e4bf6d254",
+            measurementId: "G-E6BVKY3DD1"
+        };
+
+        window.firebaseApp = null;
+        window.firebaseDB = null;
+        window.firebaseAnalytics = null;
+        window.firebaseConnectionError = '';
+
+        try {
+            if (window.firebase) {
+                window.firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+                window.firebaseDB = firebase.firestore();
+                try {
+                    if (firebase.analytics && firebase.analytics.isSupported && firebase.analytics.isSupported()) {
+                        window.firebaseAnalytics = firebase.analytics();
+                    }
+                } catch (analyticsError) {
+                    console.warn('Firebase Analytics unavailable in this environment:', analyticsError);
+                }
+            }
+        } catch (firebaseError) {
+            console.error('Firebase initialization failed:', firebaseError);
+            window.firebaseConnectionError = firebaseError.message || String(firebaseError);
+        }
+    </script>
+
     <style>
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -38,6 +76,176 @@
             100% { transform: translateX(-50%); }
         }
         .scroll-animation { animation: scroll 20s linear infinite; }
+        .scroll-animation:hover { animation-play-state: paused; }
+
+        @keyframes bgShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @keyframes floatingOrbs {
+            0% { transform: translate3d(-4%, -3%, 0) scale(1); }
+            50% { transform: translate3d(4%, 3%, 0) scale(1.05); }
+            100% { transform: translate3d(2%, -4%, 0) scale(1); }
+        }
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @keyframes buttonShine {
+            0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { transform: translateX(180%) skewX(-18deg); opacity: 0; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 rgba(168, 85, 247, 0); }
+            50% { box-shadow: 0 0 26px rgba(168, 85, 247, 0.35), 0 0 48px rgba(236, 72, 153, 0.18); }
+        }
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+            70% { transform: scale(1.03) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes progressGlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        @keyframes spinSmooth {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pendingPulse {
+            0%, 100% { border-color: rgba(250, 204, 21, 0.4); }
+            50% { border-color: rgba(250, 204, 21, 0.95); box-shadow: 0 0 25px rgba(250, 204, 21, 0.16); }
+        }
+        @keyframes completedGlow {
+            0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+            50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.22); }
+            100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        body {
+            background-size: 220% 220%;
+            animation: bgShift 18s ease infinite;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: -20%;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.25), transparent 28%),
+                radial-gradient(circle at 80% 15%, rgba(236, 72, 153, 0.18), transparent 24%),
+                radial-gradient(circle at 55% 80%, rgba(59, 130, 246, 0.14), transparent 24%);
+            filter: blur(54px);
+            animation: floatingOrbs 16s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 0;
+        }
+        #app { position: relative; z-index: 1; }
+        .gradient-text {
+            background-size: 220% auto;
+            animation: gradientMove 5s ease infinite;
+        }
+        .glass {
+            transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, background 0.28s ease;
+        }
+        .glass:hover {
+            box-shadow: 0 22px 70px rgba(88, 28, 135, 0.26);
+        }
+        button:not(:disabled), .animated-button {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+            transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s ease, filter 0.22s ease, background 0.22s ease;
+        }
+        button:not(:disabled):hover, .animated-button:hover {
+            transform: translateY(-2px) scale(1.02);
+            filter: brightness(1.08);
+        }
+        button:not(:disabled):active, .animated-button:active {
+            transform: translateY(0) scale(0.96);
+        }
+        button:not(:disabled)::after, .animated-button::after {
+            content: '';
+            position: absolute;
+            top: -45%;
+            left: -80%;
+            width: 42%;
+            height: 190%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.38), transparent);
+            transform: translateX(-140%) skewX(-18deg);
+            pointer-events: none;
+            z-index: 2;
+        }
+        button:not(:disabled):hover::after, .animated-button:hover::after {
+            animation: buttonShine 0.85s ease;
+        }
+        button[class*="from-purple"]:not(:disabled), a[class*="from-purple"] {
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        .h-full.bg-gradient-to-r {
+            background-size: 200% 100%;
+            animation: progressGlow 2.4s linear infinite;
+        }
+        .reward-hero {
+            animation: cardFloat 5s ease-in-out infinite;
+        }
+        .action-card {
+            animation: popIn 0.45s ease both;
+            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+        }
+        .action-card:hover {
+            transform: translateX(4px) translateY(-2px);
+            box-shadow: 0 16px 40px rgba(147, 51, 234, 0.18);
+        }
+        .action-pending {
+            animation: pendingPulse 1.2s ease-in-out infinite;
+        }
+        .action-complete {
+            animation: completedGlow 1.2s ease-in-out, popIn 0.38s ease both;
+        }
+        .timer-button {
+            position: relative;
+            overflow: hidden;
+            background: rgba(234, 179, 8, 0.16);
+            border: 1px solid rgba(250, 204, 21, 0.55);
+            color: #fde68a;
+            cursor: wait;
+        }
+        .timer-fill {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(250, 204, 21, 0.22), rgba(236, 72, 153, 0.22));
+            transition: width 0.28s linear;
+            z-index: 0;
+        }
+        .timer-button-content {
+            position: relative;
+            z-index: 1;
+        }
+        .mini-spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(253, 230, 138, 0.32);
+            border-top-color: #fde68a;
+            border-radius: 9999px;
+            animation: spinSmooth 0.8s linear infinite;
+        }
+        .completed-badge {
+            animation: popIn 0.38s ease both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white min-h-screen">
@@ -49,10 +257,19 @@
         // ==================== STATE MANAGEMENT ====================
         const state = {
             currentPage: 'home',
+            pageData: {},
             user: null,
             campaigns: [],
-            demoProgress: 0
+            demoProgress: 0,
+            adminLoggedIn: false,
+            cloudStatus: window.firebaseDB ? 'connected' : 'offline',
+            adminCloudLoading: false,
+            lastCloudSync: ''
         };
+
+        const actionTimerIntervals = {};
+        const ADMIN_USERNAME = 'sadithas59@gmail.com';
+        const ADMIN_PASSCODE = 'Time?7@@';
 
         // Load state from localStorage
         function loadState() {
@@ -62,6 +279,10 @@
                 state.user = data.user;
                 state.campaigns = data.campaigns || [];
             }
+            state.adminLoggedIn = localStorage.getItem('contentLockerAdminSession') === 'true';
+            if (state.user) {
+                syncCurrentWorkspaceToAdminStore();
+            }
         }
 
         // Save state to localStorage
@@ -70,6 +291,353 @@
                 user: state.user,
                 campaigns: state.campaigns
             }));
+            syncCurrentWorkspaceToAdminStore();
+            syncCurrentWorkspaceToCloud();
+        }
+
+
+
+        // ==================== ADMIN STORE HELPERS ====================
+        function getAdminStore() {
+            try {
+                const saved = localStorage.getItem('contentLockerAdminStore');
+                const store = saved ? JSON.parse(saved) : { users: [], campaigns: [] };
+                store.users = Array.isArray(store.users) ? store.users : [];
+                store.campaigns = Array.isArray(store.campaigns) ? store.campaigns : [];
+                return store;
+            } catch (error) {
+                return { users: [], campaigns: [] };
+            }
+        }
+
+        function saveAdminStore(store) {
+            localStorage.setItem('contentLockerAdminStore', JSON.stringify({
+                users: Array.isArray(store.users) ? store.users : [],
+                campaigns: Array.isArray(store.campaigns) ? store.campaigns : []
+            }));
+        }
+
+        function syncCurrentWorkspaceToAdminStore() {
+            if (!state.user || !state.user.username) return;
+
+            const store = getAdminStore();
+            const existingUserIndex = store.users.findIndex(user => user.username === state.user.username);
+            const userRecord = {
+                username: state.user.username,
+                name: state.user.name || state.user.username,
+                email: state.user.email || '',
+                plan: state.user.plan || 'free',
+                isGuest: !!state.user.isGuest,
+                lastSeen: new Date().toISOString()
+            };
+
+            if (existingUserIndex >= 0) {
+                store.users[existingUserIndex] = { ...store.users[existingUserIndex], ...userRecord };
+            } else {
+                store.users.push({ ...userRecord, createdAt: new Date().toISOString() });
+            }
+
+            const currentCampaigns = (state.campaigns || []).map(campaign => ({
+                ...campaign,
+                ownerUsername: state.user.username,
+                ownerName: state.user.name || state.user.username,
+                ownerEmail: state.user.email || ''
+            }));
+
+            store.campaigns = [
+                ...store.campaigns.filter(campaign => campaign.ownerUsername !== state.user.username),
+                ...currentCampaigns
+            ];
+
+            saveAdminStore(store);
+        }
+
+        function getAdminCampaign(ownerUsername, campaignId) {
+            const store = getAdminStore();
+            return store.campaigns.find(campaign => campaign.ownerUsername === ownerUsername && campaign.id === campaignId);
+        }
+
+        function saveCampaignEverywhere(ownerUsername, campaignId, updatedCampaign) {
+            const store = getAdminStore();
+            const campaignIndex = store.campaigns.findIndex(campaign => campaign.ownerUsername === ownerUsername && campaign.id === campaignId);
+            const campaignToSave = {
+                ...updatedCampaign,
+                id: campaignId,
+                ownerUsername,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (campaignIndex >= 0) {
+                store.campaigns[campaignIndex] = campaignToSave;
+            } else {
+                store.campaigns.push(campaignToSave);
+            }
+            saveAdminStore(store);
+
+            if (state.user && state.user.username === ownerUsername) {
+                const localIndex = state.campaigns.findIndex(campaign => campaign.id === campaignId);
+                if (localIndex >= 0) {
+                    state.campaigns[localIndex] = { ...campaignToSave };
+                } else {
+                    state.campaigns.push({ ...campaignToSave });
+                }
+                localStorage.setItem('contentLocker', JSON.stringify({
+                    user: state.user,
+                    campaigns: state.campaigns
+                }));
+            }
+
+            cloudSaveCampaign(ownerUsername, campaignToSave).catch(error => {
+                console.error('Could not save campaign to Firebase:', error);
+                setCloudStatus('error', error.message || String(error));
+            });
+        }
+
+        function deleteCampaignEverywhere(ownerUsername, campaignId) {
+            const store = getAdminStore();
+            store.campaigns = store.campaigns.filter(campaign => !(campaign.ownerUsername === ownerUsername && campaign.id === campaignId));
+            saveAdminStore(store);
+
+            if (state.user && state.user.username === ownerUsername) {
+                state.campaigns = state.campaigns.filter(campaign => campaign.id !== campaignId);
+                localStorage.setItem('contentLocker', JSON.stringify({
+                    user: state.user,
+                    campaigns: state.campaigns
+                }));
+            }
+
+            cloudDeleteCampaign(ownerUsername, campaignId).catch(error => {
+                console.error('Could not delete campaign from Firebase:', error);
+                setCloudStatus('error', error.message || String(error));
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(value) {
+            return escapeHtml(value);
+        }
+
+        function jsString(value) {
+            return String(value ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '');
+        }
+
+
+        // ==================== FIREBASE / CLOUD SYNC HELPERS ====================
+        function isFirebaseReady() {
+            return !!window.firebaseDB;
+        }
+
+        function getCampaignDocId(ownerUsername, campaignId) {
+            return `${ownerUsername}__${campaignId}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function setCloudStatus(status, message = '') {
+            state.cloudStatus = status;
+            state.cloudError = message;
+            if (status === 'connected' || status === 'synced') {
+                state.lastCloudSync = new Date().toLocaleString();
+            }
+        }
+
+        async function cloudSaveUser(user) {
+            if (!isFirebaseReady() || !user || !user.username) return;
+            const userRecord = {
+                username: user.username,
+                name: user.name || user.username,
+                email: user.email || '',
+                plan: user.plan || 'free',
+                isGuest: !!user.isGuest,
+                updatedAt: new Date().toISOString(),
+                lastSeen: new Date().toISOString()
+            };
+            await window.firebaseDB.collection('users').doc(user.username).set(userRecord, { merge: true });
+        }
+
+        async function cloudSaveCampaign(ownerUsername, campaign) {
+            if (!isFirebaseReady() || !ownerUsername || !campaign || !campaign.id) return;
+            const campaignRecord = {
+                ...campaign,
+                ownerUsername,
+                ownerName: campaign.ownerName || state.user?.name || ownerUsername,
+                ownerEmail: campaign.ownerEmail || state.user?.email || '',
+                updatedAt: new Date().toISOString()
+            };
+            await window.firebaseDB.collection('campaigns').doc(getCampaignDocId(ownerUsername, campaign.id)).set(campaignRecord, { merge: true });
+        }
+
+        async function cloudDeleteCampaign(ownerUsername, campaignId) {
+            if (!isFirebaseReady() || !ownerUsername || !campaignId) return;
+            await window.firebaseDB.collection('campaigns').doc(getCampaignDocId(ownerUsername, campaignId)).delete();
+        }
+
+        async function syncCurrentWorkspaceToCloud() {
+            if (!isFirebaseReady() || !state.user || !state.user.username) return;
+            try {
+                setCloudStatus('syncing');
+                await cloudSaveUser(state.user);
+                await Promise.all((state.campaigns || []).map(campaign => cloudSaveCampaign(state.user.username, {
+                    ...campaign,
+                    ownerUsername: state.user.username,
+                    ownerName: state.user.name || state.user.username,
+                    ownerEmail: state.user.email || ''
+                })));
+                setCloudStatus('synced');
+            } catch (error) {
+                console.error('Firebase sync failed:', error);
+                setCloudStatus('error', error.message || String(error));
+            }
+        }
+
+        async function loadCurrentUserCampaignsFromCloud() {
+            if (!isFirebaseReady() || !state.user || !state.user.username) return;
+            try {
+                const snapshot = await window.firebaseDB.collection('campaigns').where('ownerUsername', '==', state.user.username).get();
+                const cloudCampaigns = snapshot.docs.map(doc => ({ id: doc.data().id || doc.id, ...doc.data() }));
+                if (cloudCampaigns.length) {
+                    const byId = new Map((state.campaigns || []).map(campaign => [campaign.id, campaign]));
+                    cloudCampaigns.forEach(campaign => byId.set(campaign.id, campaign));
+                    state.campaigns = Array.from(byId.values());
+                    localStorage.setItem('contentLocker', JSON.stringify({ user: state.user, campaigns: state.campaigns }));
+                    syncCurrentWorkspaceToAdminStore();
+                    render({ preserveScroll: true });
+                }
+            } catch (error) {
+                console.warn('Could not load creator links from Firebase:', error);
+                setCloudStatus('error', error.message || String(error));
+            }
+        }
+
+        async function cloudLoadAdminStore() {
+            if (!isFirebaseReady()) {
+                return getAdminStore();
+            }
+
+            const [usersSnapshot, campaignsSnapshot] = await Promise.all([
+                window.firebaseDB.collection('users').get(),
+                window.firebaseDB.collection('campaigns').get()
+            ]);
+
+            const users = usersSnapshot.docs.map(doc => ({ username: doc.id, ...doc.data() }));
+            const campaigns = campaignsSnapshot.docs.map(doc => ({ firebaseDocId: doc.id, ...doc.data() }));
+
+            return { users, campaigns };
+        }
+
+        async function refreshAdminCloudData(showAlert = false) {
+            if (!isFirebaseReady()) {
+                setCloudStatus('offline', window.firebaseConnectionError || 'Firebase SDK is not loaded. Using local browser storage only.');
+                if (showAlert) alert('Firebase is not connected. Admin is showing local browser data only.');
+                return;
+            }
+
+            state.adminCloudLoading = true;
+            if (state.currentPage === 'adminDashboard') render({ preserveScroll: true });
+
+            try {
+                setCloudStatus('syncing');
+                const cloudStore = await cloudLoadAdminStore();
+                saveAdminStore(cloudStore);
+                state.adminCloudLoading = false;
+                setCloudStatus('synced');
+                if (state.currentPage === 'adminDashboard') render({ preserveScroll: true });
+                if (showAlert) alert('Firebase data refreshed.');
+            } catch (error) {
+                console.error('Admin Firebase refresh failed:', error);
+                state.adminCloudLoading = false;
+                setCloudStatus('error', error.message || String(error));
+                if (state.currentPage === 'adminDashboard') render({ preserveScroll: true });
+                if (showAlert) alert('Could not refresh Firebase data: ' + (error.message || error));
+            }
+        }
+
+        // ==================== NO-LOGIN / SHARE HELPERS ====================
+        function generateGuestUsername() {
+            return 'guest-' + Math.random().toString(36).slice(2, 8);
+        }
+
+        function ensureGuestUser() {
+            if (!state.user) {
+                state.user = {
+                    name: 'Guest Creator',
+                    email: '',
+                    username: generateGuestUsername(),
+                    plan: 'free',
+                    isGuest: true
+                };
+                saveState();
+            }
+            return state.user;
+        }
+
+        function getBaseUrl() {
+            return window.location.href.split('#')[0];
+        }
+
+        function simpleHash(value) {
+            let hash = 0;
+            for (let i = 0; i < value.length; i++) {
+                hash = ((hash << 5) - hash) + value.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash).toString(36);
+        }
+
+        function encodeShareData(data) {
+            const json = JSON.stringify(data);
+            const binary = encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function decodeShareData(encoded) {
+            let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) base64 += '=';
+            const binary = atob(base64);
+            const json = decodeURIComponent(Array.from(binary).map(char => '%' + char.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
+            return JSON.parse(json);
+        }
+
+        function getShareableLink(username, campaign) {
+            const payload = {
+                id: campaign.id,
+                username,
+                title: campaign.title,
+                slug: campaign.slug,
+                description: campaign.description,
+                rewardType: campaign.rewardType,
+                rewardPayload: campaign.rewardPayload,
+                actions: campaign.actions,
+                requireEmail: !!campaign.requireEmail
+            };
+            return `${getBaseUrl()}#/c/${encodeShareData(payload)}`;
+        }
+
+        function buildSharedCampaign(payload) {
+            return {
+                id: payload.id || `shared-${simpleHash(JSON.stringify(payload))}`,
+                title: payload.title || 'Locked Content',
+                slug: payload.slug || 'shared-link',
+                description: payload.description || '',
+                rewardType: payload.rewardType || 'url',
+                rewardPayload: payload.rewardPayload || '',
+                actions: Array.isArray(payload.actions) ? payload.actions : [],
+                requireEmail: !!payload.requireEmail,
+                status: 'active',
+                clicks: 0,
+                unlocks: 0,
+                createdAt: payload.createdAt || new Date().toISOString()
+            };
         }
 
         // ==================== NAVIGATION ====================
@@ -81,6 +649,7 @@
 
         // ==================== SUPPORTED PLATFORMS ====================
         const PLATFORMS = [
+            { id: 'visitpage', name: 'Visit a Page', icon: '🌐', action: 'Visit Page' },
             { id: 'youtube', name: 'YouTube', icon: '📺', action: 'Subscribe' },
             { id: 'instagram', name: 'Instagram', icon: '📷', action: 'Follow' },
             { id: 'tiktok', name: 'TikTok', icon: '🎵', action: 'Follow' },
@@ -118,15 +687,11 @@
                                 <a href="#features" class="text-gray-300 hover:text-white transition">Features</a>
                                 <a href="#pricing" class="text-gray-300 hover:text-white transition">Pricing</a>
                                 <a href="#faq" class="text-gray-300 hover:text-white transition">FAQ</a>
-                                ${state.user ? `
-                                    <button onclick="navigate('dashboard')" class="text-gray-300 hover:text-white transition">Dashboard</button>
-                                    <button onclick="logout()" class="text-gray-400 hover:text-white transition text-sm">Logout</button>
-                                ` : `
-                                    <button onclick="navigate('signin')" class="text-gray-300 hover:text-white transition">Sign In</button>
-                                    <button onclick="navigate('signup')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
-                                        Get Started Free
-                                    </button>
-                                `}
+                                <button onclick="navigate(state.adminLoggedIn ? 'adminDashboard' : 'adminLogin')" class="text-gray-300 hover:text-white transition">Admin</button>
+                                <button onclick="navigate('dashboard')" class="text-gray-300 hover:text-white transition">Dashboard</button>
+                                <button onclick="navigate('newCampaign')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                    Create Link Free
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -146,8 +711,8 @@
                                     The ultimate platform for creators. Lock exclusive content behind social actions. Turn every download into followers, subscribers, and engaged fans.
                                 </p>
                                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                    <button onclick="navigate('signup')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-full text-lg font-semibold hover:shadow-2xl hover:shadow-purple-500/50 transition transform hover:scale-105">
-                                        Create Your First Link — Free
+                                    <button onclick="navigate('newCampaign')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-full text-lg font-semibold hover:shadow-2xl hover:shadow-purple-500/50 transition transform hover:scale-105">
+                                        Create Your Link — Free
                                     </button>
                                     <a href="#demo" class="border border-white/30 px-8 py-4 rounded-full text-lg font-semibold hover:bg-white/10 transition text-center">
                                         See How It Works
@@ -242,7 +807,7 @@
                         <p class="text-center text-gray-400 mb-6">Trusted by creators across all platforms</p>
                         <div class="overflow-hidden">
                             <div class="flex gap-8 scroll-animation" style="width: 200%;">
-                                ${['📺', '📷', '🎵', '🐦', '💬', '🎮', '🎧', '👥', '💼', '⚙️', '✈️', '💚', '📺', '📷', '🎵', '🐦', '💬', '🎮', '🎧', '👥', '💼', '⚙️', '✈️', '💚'].map(icon => `
+                                ${['🌐', '📺', '📷', '🎵', '🐦', '💬', '🎮', '🎧', '👥', '💼', '⚙️', '✈️', '💚', '🌐', '📺', '📷', '🎵', '🐦', '💬', '🎮', '🎧', '👥', '💼', '⚙️', '✈️', '💚'].map(icon => `
                                     <span class="text-4xl grayscale opacity-50">${icon}</span>
                                 `).join('')}
                             </div>
@@ -320,12 +885,12 @@
                                         <span class="text-5xl font-bold">${plan.price}</span>
                                         <span class="text-gray-400">/month</span>
                                     </div>
-                                    <button onclick="navigate('signup')" class="w-full py-3 rounded-xl font-semibold mb-6 transition ${
+                                    <button onclick="navigate('newCampaign')" class="w-full py-3 rounded-xl font-semibold mb-6 transition ${
                                         plan.highlighted
                                             ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-lg hover:shadow-purple-500/50'
                                             : 'bg-white/10 hover:bg-white/20'
                                     }">
-                                        ${plan.highlighted ? 'Start Free Trial' : 'Get Started'}
+                                        ${plan.highlighted ? 'Create Link' : 'Get Started'}
                                     </button>
                                     <ul class="space-y-3">
                                         ${plan.features.map(feature => `
@@ -351,7 +916,7 @@
                         <div class="space-y-4">
                             ${[
                                 { question: 'How does verification work?', answer: 'Content Locker uses a hybrid approach. For platforms with public APIs (like YouTube, Discord), we verify actions in real-time. For platforms without verification APIs, we use an honor-system "click-to-complete" flow that opens the target link and lets visitors self-report completion. This is industry-standard and highly effective.' },
-                                { question: 'Do visitors need to create an account?', answer: 'No! Visitors can unlock content without signing up. This reduces friction and maximizes your conversion rate.' },
+                                { question: 'Do creators or visitors need to create an account?', answer: 'No! Creators can build shareable unlock links in guest mode, and visitors can unlock content without signing up. This reduces friction and maximizes your conversion rate.' },
                                 { question: 'Can I use my own domain?', answer: 'Yes! Pro and Business plans support custom domains so you can use links like unlock.yourbrand.com.' },
                                 { question: 'What types of content can I lock?', answer: 'You can lock downloadable files (music, PDFs, images, videos), URLs (private links, discount codes, Patreon posts), text/code snippets, or Discord server invites.' },
                                 { question: 'Is there a limit to unlocks?', answer: 'Free plan includes 1,000 unlocks per month. Pro and Business plans have unlimited unlocks.' },
@@ -374,8 +939,8 @@
                     <div class="max-w-4xl mx-auto text-center px-4">
                         <h2 class="text-4xl md:text-5xl font-bold mb-6">Ready to Grow Your Audience?</h2>
                         <p class="text-xl text-gray-300 mb-8">Join thousands of creators turning content into followers</p>
-                        <button onclick="navigate('signup')" class="bg-white text-purple-600 px-10 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition transform hover:scale-105">
-                            Create Your First Link — Free
+                        <button onclick="navigate('newCampaign')" class="bg-white text-purple-600 px-10 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition transform hover:scale-105">
+                            Create Your Link — Free
                         </button>
                     </div>
                 </section>
@@ -396,7 +961,7 @@
                                 <ul class="space-y-2 text-gray-400">
                                     <li><a href="#features" class="hover:text-white transition">Features</a></li>
                                     <li><a href="#pricing" class="hover:text-white transition">Pricing</a></li>
-                                    <li><button onclick="navigate('signup')" class="hover:text-white transition">Sign Up</button></li>
+                                    <li><button onclick="navigate('newCampaign')" class="hover:text-white transition">Create Link</button></li>
                                 </ul>
                             </div>
                             <div>
@@ -512,7 +1077,7 @@
 
                             <div class="mt-6 text-center text-sm text-gray-400">
                                 Don't have an account? 
-                                <button onclick="navigate('signup')" class="text-purple-400 hover:text-purple-300 font-semibold">Sign Up</button>
+                                <button onclick="navigate('newCampaign')" class="text-purple-400 hover:text-purple-300 font-semibold">Create Link</button>
                             </div>
                         </div>
                     </div>
@@ -522,10 +1087,7 @@
 
         // DASHBOARD PAGE
         function DashboardPage() {
-            if (!state.user) {
-                navigate('signin');
-                return '';
-            }
+            ensureGuestUser();
 
             const stats = {
                 totalClicks: state.campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0),
@@ -549,7 +1111,10 @@
                                 <button onclick="navigate('profile', {username: '${state.user.username}'})" class="text-gray-400 hover:text-white transition text-sm">
                                     View Profile
                                 </button>
-                                <button onclick="logout()" class="text-gray-400 hover:text-white transition">Logout</button>
+                                <button onclick="navigate(state.adminLoggedIn ? 'adminDashboard' : 'adminLogin')" class="text-gray-400 hover:text-white transition text-sm">
+                                    Admin
+                                </button>
+                                <button onclick="logout()" class="text-gray-400 hover:text-white transition">Reset Data</button>
                             </div>
                         </div>
                     </div>
@@ -560,7 +1125,7 @@
                     <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
                         <div>
                             <h1 class="text-3xl font-bold mb-2">Welcome back, ${state.user.name}! 👋</h1>
-                            <p class="text-gray-400">Here's what's happening with your content</p>
+                            <p class="text-gray-400">No signup required — your creator workspace is saved on this device.</p>
                         </div>
                         <button onclick="navigate('newCampaign')" class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
                             + Create Campaign
@@ -636,10 +1201,7 @@
 
         // NEW CAMPAIGN PAGE
         function NewCampaignPage() {
-            if (!state.user) {
-                navigate('signin');
-                return '';
-            }
+            ensureGuestUser();
 
             const step = state.campaignStep || 1;
             const formData = state.campaignFormData || {
@@ -667,7 +1229,10 @@
                 </nav>
 
                 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <h1 class="text-3xl font-bold mb-8">Create New Campaign</h1>
+                    <h1 class="text-3xl font-bold mb-3">Create New Campaign</h1>
+                    <div class="mb-8 bg-green-500/10 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg text-sm">
+                        ✅ No sign up or login needed. Create your unlock link instantly and share it after publishing.
+                    </div>
 
                     <!-- Progress Steps -->
                     <div class="flex justify-between mb-8 overflow-x-auto">
@@ -710,7 +1275,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">URL Slug *</label>
                         <input type="text" name="slug" required value="${formData.slug}" pattern="[a-z0-9-]+" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="free-beat-pack">
-                        <p class="text-xs text-gray-500 mt-1">Your link: contentlocker.app/${state.user.username}/<span id="slugPreview">${formData.slug || 'slug'}</span></p>
+                        <p class="text-xs text-gray-500 mt-1">Your guest username: @${state.user.username}. A shareable link will be generated after publishing.</p>
                     </div>
 
                     <div>
@@ -870,8 +1435,9 @@
 
         // UNLOCK PAGE (Public)
         function UnlockPage() {
-            const { username, slug } = state.pageData;
-            const campaign = state.campaigns.find(c => c.slug === slug);
+            const { username, slug, sharedCampaign } = state.pageData;
+            const campaign = sharedCampaign || state.campaigns.find(c => c.slug === slug);
+            const creatorUsername = username || sharedCampaign?.username || 'creator';
             
             if (!campaign) {
                 return `
@@ -888,6 +1454,7 @@
                 `;
             }
 
+            processExpiredPendingActions(campaign.id);
             const unlockState = getUnlockState(campaign.id);
             const progress = (unlockState.completedActions.length / campaign.actions.length) * 100;
             const allComplete = unlockState.completedActions.length === campaign.actions.length;
@@ -903,12 +1470,12 @@
                                 <span class="text-2xl">🔒</span>
                                 <span class="text-xl font-bold">Content Locker</span>
                             </div>
-                            <p class="text-gray-400">by @${username}</p>
+                            <p class="text-gray-400">by @${creatorUsername}</p>
                         </div>
 
                         <!-- Campaign Card -->
                         <div class="glass rounded-2xl border border-white/10 p-8 mb-6">
-                            <div class="w-full h-48 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl mb-6 flex items-center justify-center text-6xl">
+                            <div class="reward-hero w-full h-48 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl mb-6 flex items-center justify-center text-6xl">
                                 ${campaign.rewardType === 'file' ? '📁' : campaign.rewardType === 'url' ? '🔗' : campaign.rewardType === 'text' ? '📝' : '💬'}
                             </div>
 
@@ -929,31 +1496,54 @@
                             <!-- Actions -->
                             <div class="space-y-3 mb-6">
                                 ${campaign.actions.map((action, index) => {
-                                    const platform = PLATFORMS.find(p => p.id === action.platform) || { icon: '🔗', name: action.platform };
+                                    const platform = PLATFORMS.find(p => p.id === action.platform) || { icon: '🔗', name: action.platform, action: 'Complete Action' };
                                     const isComplete = unlockState.completedActions.includes(index);
+                                    const pendingUntil = Number(unlockState.pendingActions?.[index] || 0);
+                                    const isPending = !isComplete && pendingUntil > Date.now();
+                                    const msLeft = Math.max(0, pendingUntil - Date.now());
+                                    const secondsLeft = Math.max(1, Math.ceil(msLeft / 1000));
+                                    const timerProgress = Math.min(100, Math.max(0, ((3000 - msLeft) / 3000) * 100));
+                                    const encodedTargetUrl = encodeURIComponent(action.targetUrl || '');
                                     
                                     return `
-                                        <div class="flex items-center justify-between p-4 rounded-xl border transition ${isComplete ? 'bg-green-500/10 border-green-500/50' : 'bg-slate-700/30 border-slate-600/50 hover:border-purple-500/50'}">
+                                        <div class="action-card flex items-center justify-between p-4 rounded-xl border transition ${
+                                            isComplete
+                                                ? 'action-complete bg-green-500/10 border-green-500/50'
+                                                : isPending
+                                                    ? 'action-pending bg-yellow-500/10 border-yellow-400/60'
+                                                    : 'bg-slate-700/30 border-slate-600/50 hover:border-purple-500/50'
+                                        }">
                                             <div class="flex items-center gap-3">
                                                 <span class="text-3xl">${platform.icon}</span>
                                                 <div>
                                                     <div class="font-semibold">${platform.name}</div>
-                                                    <div class="text-sm text-gray-400">${platform.action}</div>
+                                                    <div class="text-sm ${isPending ? 'text-yellow-200' : 'text-gray-400'}">
+                                                        ${isPending ? `Verifying... ${secondsLeft}s left` : platform.action}
+                                                    </div>
                                                 </div>
                                             </div>
                                             ${isComplete ? `
-                                                <div class="flex items-center gap-2 text-green-400 font-semibold">
+                                                <div class="completed-badge flex items-center gap-2 text-green-400 font-semibold">
                                                     <span>✓</span>
                                                     <span>Done</span>
                                                 </div>
+                                            ` : isPending ? `
+                                                <button disabled class="timer-button px-6 py-2 rounded-lg font-semibold">
+                                                    <span class="timer-fill" style="width: ${timerProgress}%"></span>
+                                                    <span class="timer-button-content inline-flex items-center gap-2">
+                                                        <span class="mini-spinner"></span>
+                                                        Wait ${secondsLeft}s
+                                                    </span>
+                                                </button>
                                             ` : `
-                                                <button onclick="completeUnlockAction('${campaign.id}', ${index}, '${action.targetUrl}')" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition">
+                                                <button onclick="completeUnlockAction('${campaign.id}', ${index}, decodeURIComponent('${encodedTargetUrl}'))" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition">
                                                     Complete
                                                 </button>
                                             `}
                                         </div>
                                     `;
                                 }).join('')}
+
                             </div>
 
                             <!-- Email Capture -->
@@ -1055,6 +1645,330 @@
             `;
         }
 
+
+        // ADMIN LOGIN PAGE
+        function AdminLoginPage() {
+            return `
+                <div class="min-h-screen flex items-center justify-center px-4 py-12">
+                    <div class="max-w-md w-full">
+                        <div class="text-center mb-8">
+                            <button onclick="navigate('home')" class="inline-flex items-center space-x-2 mb-8 hover:opacity-80 transition">
+                                <span class="text-3xl">🔒</span>
+                                <span class="text-2xl font-bold">Content Locker</span>
+                            </button>
+                            <h1 class="text-3xl font-bold mb-2">Admin Login</h1>
+                            <p class="text-gray-400">Access all saved users and edit every unlock link.</p>
+                        </div>
+
+                        <div class="glass rounded-2xl border border-white/10 p-8">
+                            <div class="mb-6 bg-green-500/10 border border-green-500/30 text-green-200 px-4 py-3 rounded-lg text-sm">
+                                ✅ Firebase connected mode: users and links sync to Firestore when your Firebase rules allow it. If Firebase is unavailable, the site falls back to local browser storage.
+                            </div>
+                            <form onsubmit="handleAdminLogin(event)" class="space-y-6">
+                                <div id="adminLoginError" class="hidden bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg"></div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Admin Username</label>
+                                    <input type="email" name="adminUsername" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="sadithas59@gmail.com">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Passcode</label>
+                                    <input type="password" name="adminPasscode" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter passcode">
+                                </div>
+                                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                    Login as Admin
+                                </button>
+                            </form>
+                            <button onclick="navigate('home')" class="w-full mt-4 bg-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-600 transition">
+                                ← Back Home
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ADMIN DASHBOARD PAGE
+        function AdminDashboardPage() {
+            if (!state.adminLoggedIn) {
+                return AdminLoginPage();
+            }
+
+            syncCurrentWorkspaceToAdminStore();
+            const store = getAdminStore();
+            const filterUser = state.pageData?.filterUser || '';
+            const users = [...store.users].sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || ''));
+            const campaigns = [...store.campaigns].sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+            const visibleCampaigns = filterUser ? campaigns.filter(campaign => campaign.ownerUsername === filterUser) : campaigns;
+            const activeCount = campaigns.filter(campaign => campaign.status === 'active').length;
+
+            return `
+                <nav class="border-b border-white/10 glass sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-16">
+                            <button onclick="navigate('adminDashboard')" class="flex items-center space-x-2">
+                                <span class="text-2xl">🛡️</span>
+                                <span class="text-xl font-bold">Admin Panel</span>
+                            </button>
+                            <div class="flex items-center gap-4">
+                                <button onclick="navigate('dashboard')" class="text-gray-400 hover:text-white transition text-sm">Creator Dashboard</button>
+                                <button onclick="adminLogout()" class="text-gray-400 hover:text-white transition text-sm">Admin Logout</button>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="flex justify-between items-start mb-8 flex-wrap gap-4">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">All Users & Links</h1>
+                            <p class="text-gray-400">Admin can view every saved user and edit every campaign link in this browser.</p>
+                        </div>
+                        <div class="flex gap-3 flex-wrap">
+                            <button onclick="refreshAdminCloudData(true)" class="bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg font-semibold transition">
+                                ${state.adminCloudLoading ? 'Syncing...' : 'Refresh Firebase'}
+                            </button>
+                            ${filterUser ? `
+                                <button onclick="navigate('adminDashboard')" class="bg-slate-700 hover:bg-slate-600 px-5 py-3 rounded-lg font-semibold transition">
+                                    Show All Links
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="mb-8 rounded-xl border ${state.cloudStatus === 'error' ? 'border-red-500/40 bg-red-500/10 text-red-200' : state.cloudStatus === 'offline' ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-200' : 'border-green-500/40 bg-green-500/10 text-green-200'} px-4 py-3 text-sm">
+                        Firebase status: <strong>${escapeHtml(state.cloudStatus)}</strong>${state.lastCloudSync ? ` — Last sync: ${escapeHtml(state.lastCloudSync)}` : ''}${state.cloudError ? ` — ${escapeHtml(state.cloudError)}` : ''}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="glass rounded-xl border border-white/10 p-6">
+                            <div class="text-gray-400 text-sm mb-2">Saved Users</div>
+                            <div class="text-3xl font-bold">${users.length}</div>
+                        </div>
+                        <div class="glass rounded-xl border border-white/10 p-6">
+                            <div class="text-gray-400 text-sm mb-2">Total Links</div>
+                            <div class="text-3xl font-bold">${campaigns.length}</div>
+                        </div>
+                        <div class="glass rounded-xl border border-white/10 p-6">
+                            <div class="text-gray-400 text-sm mb-2">Active Links</div>
+                            <div class="text-3xl font-bold">${activeCount}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid lg:grid-cols-3 gap-8">
+                        <div class="glass rounded-xl border border-white/10 p-6 lg:col-span-1">
+                            <h2 class="text-2xl font-bold mb-5">Users</h2>
+                            ${users.length === 0 ? `
+                                <div class="text-center text-gray-400 py-10">No users saved yet.</div>
+                            ` : `
+                                <div class="space-y-3 max-h-[640px] overflow-y-auto pr-1">
+                                    ${users.map(user => {
+                                        const userLinkCount = campaigns.filter(campaign => campaign.ownerUsername === user.username).length;
+                                        return `
+                                            <div class="bg-slate-700/30 border border-slate-600/50 rounded-xl p-4 hover:border-purple-500/50 transition">
+                                                <div class="font-semibold">${escapeHtml(user.name || user.username)}</div>
+                                                <div class="text-sm text-purple-300 break-all">@${escapeHtml(user.username)}</div>
+                                                ${user.email ? `<div class="text-xs text-gray-400 break-all mt-1">${escapeHtml(user.email)}</div>` : ''}
+                                                <div class="flex items-center justify-between mt-3 text-xs text-gray-400">
+                                                    <span>${userLinkCount} link${userLinkCount === 1 ? '' : 's'}</span>
+                                                    <span>${user.isGuest ? 'Guest' : 'Account'}</span>
+                                                </div>
+                                                <button onclick="navigate('adminDashboard', {filterUser: '${jsString(user.username)}'})" class="w-full mt-3 bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm font-semibold transition">
+                                                    View / Edit Links
+                                                </button>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `}
+                        </div>
+
+                        <div class="glass rounded-xl border border-white/10 p-6 lg:col-span-2">
+                            <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+                                <h2 class="text-2xl font-bold">${filterUser ? `Links by @${escapeHtml(filterUser)}` : 'All User Links'}</h2>
+                                <span class="text-sm text-gray-400">${visibleCampaigns.length} shown</span>
+                            </div>
+                            ${visibleCampaigns.length === 0 ? `
+                                <div class="text-center py-14 text-gray-400">
+                                    <div class="text-5xl mb-3">🔗</div>
+                                    <p>No links found.</p>
+                                </div>
+                            ` : `
+                                <div class="space-y-4 max-h-[760px] overflow-y-auto pr-1">
+                                    ${visibleCampaigns.map(campaign => `
+                                        <div class="bg-slate-700/30 rounded-xl border border-slate-600/50 p-5 hover:border-purple-500/50 transition">
+                                            <div class="flex items-start justify-between gap-4 flex-wrap">
+                                                <div class="flex-1 min-w-[220px]">
+                                                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                                        <h3 class="text-lg font-semibold">${escapeHtml(campaign.title || 'Untitled Link')}</h3>
+                                                        <span class="px-2 py-1 rounded text-xs font-semibold ${campaign.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">${escapeHtml(campaign.status || 'active')}</span>
+                                                    </div>
+                                                    <div class="text-sm text-purple-300 mb-2">Owner: @${escapeHtml(campaign.ownerUsername || 'unknown')}</div>
+                                                    ${campaign.description ? `<p class="text-gray-400 text-sm mb-3">${escapeHtml(campaign.description)}</p>` : ''}
+                                                    <div class="grid sm:grid-cols-2 gap-2 text-xs text-gray-400">
+                                                        <div>Slug: <span class="text-gray-300">${escapeHtml(campaign.slug || '')}</span></div>
+                                                        <div>Reward: <span class="text-gray-300 capitalize">${escapeHtml(campaign.rewardType || 'url')}</span></div>
+                                                        <div>Actions: <span class="text-gray-300">${(campaign.actions || []).length}</span></div>
+                                                        <div>Stats: 👁️ ${campaign.clicks || 0} / 🔓 ${campaign.unlocks || 0}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-2 flex-wrap justify-end">
+                                                    <button onclick="adminCopyCampaignLink('${jsString(campaign.ownerUsername)}', '${jsString(campaign.id)}')" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition">Copy</button>
+                                                    <button onclick="navigate('unlock', {username: '${jsString(campaign.ownerUsername)}', slug: '${jsString(campaign.slug)}', sharedCampaign: getAdminCampaign('${jsString(campaign.ownerUsername)}', '${jsString(campaign.id)}')})" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm transition">View</button>
+                                                    <button onclick="navigate('adminEditCampaign', {ownerUsername: '${jsString(campaign.ownerUsername)}', campaignId: '${jsString(campaign.id)}'})" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm transition">Edit</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ADMIN EDIT CAMPAIGN PAGE
+        function AdminEditCampaignPage() {
+            if (!state.adminLoggedIn) {
+                return AdminLoginPage();
+            }
+
+            const { ownerUsername, campaignId } = state.pageData || {};
+            const campaign = getAdminCampaign(ownerUsername, campaignId);
+
+            if (!campaign) {
+                return `
+                    <div class="min-h-screen flex items-center justify-center px-4">
+                        <div class="max-w-md text-center glass rounded-2xl border border-white/10 p-8">
+                            <div class="text-6xl mb-4">❌</div>
+                            <h1 class="text-3xl font-bold mb-4">Link Not Found</h1>
+                            <p class="text-gray-400 mb-6">This campaign link is not available in the admin store.</p>
+                            <button onclick="navigate('adminDashboard')" class="bg-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition">Back to Admin</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const rewardTypes = ['url', 'file', 'text', 'discord'];
+            const actions = Array.isArray(campaign.actions) ? campaign.actions : [];
+
+            return `
+                <nav class="border-b border-white/10 glass sticky top-0 z-50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-16">
+                            <button onclick="navigate('adminDashboard')" class="flex items-center space-x-2">
+                                <span class="text-2xl">🛡️</span>
+                                <span class="text-xl font-bold">Edit User Link</span>
+                            </button>
+                            <button onclick="navigate('adminDashboard', {filterUser: '${jsString(ownerUsername)}'})" class="text-gray-400 hover:text-white transition">← Back to Admin</button>
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="mb-8">
+                        <h1 class="text-3xl font-bold mb-2">Edit Link: ${escapeHtml(campaign.title || 'Untitled Link')}</h1>
+                        <p class="text-gray-400">Owner: <span class="text-purple-300">@${escapeHtml(ownerUsername)}</span></p>
+                    </div>
+
+                    <form onsubmit="handleAdminSaveCampaign(event, '${jsString(ownerUsername)}', '${jsString(campaign.id)}')" class="glass rounded-xl border border-white/10 p-8 space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Campaign Title</label>
+                                <input type="text" name="title" required value="${escapeAttr(campaign.title || '')}" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">URL Slug</label>
+                                <input type="text" name="slug" required value="${escapeAttr(campaign.slug || '')}" pattern="[a-z0-9-]+" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                            <textarea name="description" rows="3" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">${escapeHtml(campaign.description || '')}</textarea>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Reward Type</label>
+                                <select name="rewardType" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    ${rewardTypes.map(type => `<option value="${type}" ${campaign.rewardType === type ? 'selected' : ''}>${type}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                                <select name="status" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="active" ${campaign.status === 'active' ? 'selected' : ''}>active</option>
+                                    <option value="paused" ${campaign.status === 'paused' ? 'selected' : ''}>paused</option>
+                                    <option value="draft" ${campaign.status === 'draft' ? 'selected' : ''}>draft</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Reward URL / Text / Code</label>
+                            <textarea name="rewardPayload" rows="4" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">${escapeHtml(campaign.rewardPayload || '')}</textarea>
+                        </div>
+
+                        <div class="pt-2">
+                            <label class="flex items-center gap-2 text-gray-300">
+                                <input type="checkbox" name="requireEmail" ${campaign.requireEmail ? 'checked' : ''} class="w-4 h-4 rounded border-gray-600 text-purple-600">
+                                <span>Require email to unlock</span>
+                            </label>
+                        </div>
+
+                        <div class="border-t border-white/10 pt-6">
+                            <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+                                <h2 class="text-2xl font-bold">Unlock Actions</h2>
+                                <div class="flex gap-2">
+                                    <select id="adminAddActionPlatform" class="px-3 py-2 bg-slate-700/80 border border-slate-600 rounded-lg text-white text-sm">
+                                        ${PLATFORMS.map(platform => `<option value="${platform.id}">${platform.icon} ${platform.name}</option>`).join('')}
+                                    </select>
+                                    <button type="button" onclick="adminAddSelectedAction('${jsString(ownerUsername)}', '${jsString(campaign.id)}')" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition">+ Add</button>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="actionCount" value="${actions.length}">
+                            ${actions.length === 0 ? `
+                                <div class="bg-slate-700/30 border border-slate-600/50 rounded-xl p-5 text-center text-gray-400">
+                                    No unlock actions yet. Add one above.
+                                </div>
+                            ` : `
+                                <div class="space-y-4">
+                                    ${actions.map((action, index) => `
+                                        <div class="bg-slate-700/30 border border-slate-600/50 rounded-xl p-4">
+                                            <div class="flex justify-between items-center mb-3 gap-3">
+                                                <label class="text-sm font-semibold text-gray-300">Action ${index + 1}</label>
+                                                <button type="button" onclick="adminRemoveAction('${jsString(ownerUsername)}', '${jsString(campaign.id)}', ${index})" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                                            </div>
+                                            <div class="grid md:grid-cols-3 gap-3">
+                                                <select name="actionPlatform_${index}" class="px-4 py-3 bg-slate-700/80 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                    ${PLATFORMS.map(platform => `<option value="${platform.id}" ${action.platform === platform.id ? 'selected' : ''}>${platform.icon} ${platform.name}</option>`).join('')}
+                                                </select>
+                                                <input type="text" name="actionTarget_${index}" value="${escapeAttr(action.targetUrl || '')}" class="md:col-span-2 px-4 py-3 bg-slate-700/80 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="https://example.com/page">
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+
+                        <div class="flex gap-4 flex-wrap border-t border-white/10 pt-6">
+                            <button type="button" onclick="navigate('adminDashboard', {filterUser: '${jsString(ownerUsername)}'})" class="flex-1 bg-slate-700 py-3 rounded-lg font-semibold hover:bg-slate-600 transition">
+                                Cancel
+                            </button>
+                            <button type="button" onclick="adminDeleteCampaign('${jsString(ownerUsername)}', '${jsString(campaign.id)}')" class="flex-1 bg-red-600/80 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
+                                Delete Link
+                            </button>
+                            <button type="submit" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        }
+
         // ==================== EVENT HANDLERS ====================
         
         function handleDemoAction(index) {
@@ -1094,8 +2008,121 @@
             }
         }
 
+
+        async function handleAdminLogin(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const username = String(formData.get('adminUsername') || '').trim().toLowerCase();
+            const passcode = String(formData.get('adminPasscode') || '');
+
+            if (username === ADMIN_USERNAME && passcode === ADMIN_PASSCODE) {
+                state.adminLoggedIn = true;
+                localStorage.setItem('contentLockerAdminSession', 'true');
+                navigate('adminDashboard');
+                await refreshAdminCloudData(false);
+                return;
+            }
+
+            const error = document.getElementById('adminLoginError');
+            if (error) {
+                error.textContent = 'Invalid admin username or passcode.';
+                error.classList.remove('hidden');
+            }
+        }
+
+        function adminLogout() {
+            state.adminLoggedIn = false;
+            localStorage.removeItem('contentLockerAdminSession');
+            navigate('adminLogin');
+        }
+
+        function adminCopyCampaignLink(ownerUsername, campaignId) {
+            const campaign = getAdminCampaign(ownerUsername, campaignId);
+            if (!campaign) {
+                alert('Campaign not found.');
+                return;
+            }
+            copyTextToClipboard(getShareableLink(ownerUsername, campaign));
+        }
+
+        function handleAdminSaveCampaign(event, ownerUsername, campaignId) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const existingCampaign = getAdminCampaign(ownerUsername, campaignId);
+
+            if (!existingCampaign) {
+                alert('Campaign not found.');
+                navigate('adminDashboard');
+                return;
+            }
+
+            const actionCount = Number(formData.get('actionCount') || 0);
+            const actions = [];
+            for (let index = 0; index < actionCount; index++) {
+                const platformId = formData.get(`actionPlatform_${index}`);
+                if (!platformId) continue;
+                const platform = PLATFORMS.find(item => item.id === platformId) || { action: 'Complete' };
+                actions.push({
+                    platform: platformId,
+                    targetUrl: String(formData.get(`actionTarget_${index}`) || '').trim(),
+                    actionType: platform.action.toLowerCase()
+                });
+            }
+
+            const updatedCampaign = {
+                ...existingCampaign,
+                title: String(formData.get('title') || '').trim(),
+                slug: String(formData.get('slug') || '').trim(),
+                description: String(formData.get('description') || '').trim(),
+                rewardType: String(formData.get('rewardType') || 'url'),
+                rewardPayload: String(formData.get('rewardPayload') || '').trim(),
+                status: String(formData.get('status') || 'active'),
+                requireEmail: formData.get('requireEmail') === 'on',
+                actions
+            };
+
+            saveCampaignEverywhere(ownerUsername, campaignId, updatedCampaign);
+            alert('Link updated successfully.');
+            navigate('adminDashboard', { filterUser: ownerUsername });
+        }
+
+        function adminAddSelectedAction(ownerUsername, campaignId) {
+            const select = document.getElementById('adminAddActionPlatform');
+            adminAddAction(ownerUsername, campaignId, select ? select.value : 'visitpage');
+        }
+
+        function adminAddAction(ownerUsername, campaignId, platformId) {
+            const campaign = getAdminCampaign(ownerUsername, campaignId);
+            if (!campaign) return;
+            const platform = PLATFORMS.find(item => item.id === platformId) || PLATFORMS[0];
+            const updatedCampaign = {
+                ...campaign,
+                actions: [
+                    ...(Array.isArray(campaign.actions) ? campaign.actions : []),
+                    { platform: platform.id, targetUrl: '', actionType: platform.action.toLowerCase() }
+                ]
+            };
+            saveCampaignEverywhere(ownerUsername, campaignId, updatedCampaign);
+            navigate('adminEditCampaign', { ownerUsername, campaignId });
+        }
+
+        function adminRemoveAction(ownerUsername, campaignId, actionIndex) {
+            const campaign = getAdminCampaign(ownerUsername, campaignId);
+            if (!campaign) return;
+            const actions = Array.isArray(campaign.actions) ? [...campaign.actions] : [];
+            actions.splice(actionIndex, 1);
+            saveCampaignEverywhere(ownerUsername, campaignId, { ...campaign, actions });
+            navigate('adminEditCampaign', { ownerUsername, campaignId });
+        }
+
+        function adminDeleteCampaign(ownerUsername, campaignId) {
+            if (!confirm('Delete this user link permanently from the admin store?')) return;
+            deleteCampaignEverywhere(ownerUsername, campaignId);
+            navigate('adminDashboard', { filterUser: ownerUsername });
+        }
+
         function logout() {
-            if (confirm('Are you sure you want to logout?')) {
+            if (confirm('Clear all locally saved campaigns and reset this guest workspace?')) {
                 state.user = null;
                 state.campaigns = [];
                 saveState();
@@ -1104,9 +2131,36 @@
         }
 
         function copyLink(username, slug) {
-            const url = `${window.location.origin}/#/u/${username}/${slug}`;
-            navigator.clipboard.writeText(url);
-            alert('Link copied to clipboard!');
+            const campaign = state.campaigns.find(c => c.slug === slug);
+            const url = campaign ? getShareableLink(username, campaign) : `${getBaseUrl()}#/u/${username}/${slug}`;
+            copyTextToClipboard(url);
+        }
+
+        function copyTextToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => alert('Shareable link copied to clipboard!'))
+                    .catch(() => fallbackCopyText(text));
+            } else {
+                fallbackCopyText(text);
+            }
+        }
+
+        function fallbackCopyText(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('Shareable link copied to clipboard!');
+            } catch (error) {
+                prompt('Copy your shareable link:', text);
+            }
+            document.body.removeChild(textarea);
         }
 
         // Campaign creation handlers
@@ -1176,6 +2230,7 @@
         }
 
         function publishCampaign() {
+            ensureGuestUser();
             const campaign = {
                 id: Date.now().toString(),
                 ...state.campaignFormData,
@@ -1196,41 +2251,142 @@
         // Unlock page handlers
         function getUnlockState(campaignId) {
             const saved = localStorage.getItem(`unlock-${campaignId}`);
-            if (saved) {
-                return JSON.parse(saved);
-            }
-            return {
+            const unlockState = saved ? JSON.parse(saved) : {
                 completedActions: [],
+                pendingActions: {},
                 unlocked: false,
                 email: '',
                 showConfetti: false
             };
+
+            unlockState.completedActions = Array.isArray(unlockState.completedActions) ? unlockState.completedActions : [];
+            unlockState.pendingActions = unlockState.pendingActions && typeof unlockState.pendingActions === 'object' ? unlockState.pendingActions : {};
+            return unlockState;
         }
 
         function saveUnlockState(campaignId, unlockState) {
             localStorage.setItem(`unlock-${campaignId}`, JSON.stringify(unlockState));
         }
 
-        function completeUnlockAction(campaignId, actionIndex, targetUrl) {
-            window.open(targetUrl, '_blank');
-            
-            setTimeout(() => {
-                const unlockState = getUnlockState(campaignId);
-                if (!unlockState.completedActions.includes(actionIndex)) {
-                    unlockState.completedActions.push(actionIndex);
-                    saveUnlockState(campaignId, unlockState);
-                    
-                    // Update campaign clicks
-                    const campaign = state.campaigns.find(c => c.id === campaignId);
-                    if (campaign) {
-                        campaign.clicks = (campaign.clicks || 0) + 1;
-                        saveState();
-                    }
-                    
-                    render();
-                }
-            }, 2000);
+        function getCurrentUnlockOwnerUsername() {
+            return state.pageData?.sharedCampaign?.ownerUsername || state.pageData?.username || state.user?.username || '';
         }
+
+        function cloudIncrementCampaignStat(campaignId, field, amount = 1) {
+            if (!isFirebaseReady() || !campaignId) return;
+            const ownerUsername = getCurrentUnlockOwnerUsername();
+            if (!ownerUsername) return;
+
+            const incrementValue = window.firebase?.firestore?.FieldValue
+                ? window.firebase.firestore.FieldValue.increment(amount)
+                : amount;
+
+            window.firebaseDB.collection('campaigns').doc(getCampaignDocId(ownerUsername, campaignId)).set({
+                id: campaignId,
+                ownerUsername,
+                [field]: incrementValue,
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(error => {
+                console.warn('Could not update Firebase campaign stat:', error);
+                setCloudStatus('error', error.message || String(error));
+            });
+        }
+
+        function incrementCampaignClicks(campaignId, amount = 1) {
+            const campaign = state.campaigns.find(c => c.id === campaignId);
+            if (campaign) {
+                campaign.clicks = (campaign.clicks || 0) + amount;
+                saveState();
+            } else {
+                cloudIncrementCampaignStat(campaignId, 'clicks', amount);
+            }
+        }
+
+        function markActionCompleted(campaignId, actionIndex) {
+            const unlockState = getUnlockState(campaignId);
+            const alreadyCompleted = unlockState.completedActions.includes(actionIndex);
+
+            if (!alreadyCompleted) {
+                unlockState.completedActions.push(actionIndex);
+                incrementCampaignClicks(campaignId);
+            }
+
+            if (unlockState.pendingActions) {
+                delete unlockState.pendingActions[actionIndex];
+            }
+
+            saveUnlockState(campaignId, unlockState);
+            return !alreadyCompleted;
+        }
+
+        function processExpiredPendingActions(campaignId) {
+            const unlockState = getUnlockState(campaignId);
+            const now = Date.now();
+            let changed = false;
+
+            Object.entries(unlockState.pendingActions || {}).forEach(([index, pendingUntil]) => {
+                const actionIndex = Number(index);
+                if (Number(pendingUntil) <= now && !unlockState.completedActions.includes(actionIndex)) {
+                    unlockState.completedActions.push(actionIndex);
+                    delete unlockState.pendingActions[index];
+                    incrementCampaignClicks(campaignId);
+                    changed = true;
+                } else if (Number(pendingUntil) <= now) {
+                    delete unlockState.pendingActions[index];
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                saveUnlockState(campaignId, unlockState);
+            }
+        }
+
+        function startActionTimer(campaignId, actionIndex) {
+            const timerKey = `${campaignId}-${actionIndex}`;
+            if (actionTimerIntervals[timerKey]) {
+                clearInterval(actionTimerIntervals[timerKey]);
+            }
+
+            actionTimerIntervals[timerKey] = setInterval(() => {
+                const unlockState = getUnlockState(campaignId);
+                const pendingUntil = Number(unlockState.pendingActions?.[actionIndex] || 0);
+
+                if (!pendingUntil) {
+                    clearInterval(actionTimerIntervals[timerKey]);
+                    delete actionTimerIntervals[timerKey];
+                    return;
+                }
+
+                if (Date.now() >= pendingUntil) {
+                    clearInterval(actionTimerIntervals[timerKey]);
+                    delete actionTimerIntervals[timerKey];
+                    markActionCompleted(campaignId, actionIndex);
+                    render({ preserveScroll: true });
+                } else {
+                    render({ preserveScroll: true });
+                }
+            }, 250);
+        }
+
+        function completeUnlockAction(campaignId, actionIndex, targetUrl) {
+            const unlockState = getUnlockState(campaignId);
+
+            if (unlockState.completedActions.includes(actionIndex) || unlockState.pendingActions?.[actionIndex]) {
+                return;
+            }
+
+            if (targetUrl && targetUrl.trim()) {
+                window.open(targetUrl, '_blank');
+            }
+
+            unlockState.pendingActions = unlockState.pendingActions || {};
+            unlockState.pendingActions[actionIndex] = Date.now() + 3000;
+            saveUnlockState(campaignId, unlockState);
+            render({ preserveScroll: true });
+            startActionTimer(campaignId, actionIndex);
+        }
+
 
         function handleUnlock(campaignId, requireEmail) {
             const unlockState = getUnlockState(campaignId);
@@ -1253,6 +2409,8 @@
             if (campaign) {
                 campaign.unlocks = (campaign.unlocks || 0) + 1;
                 saveState();
+            } else {
+                cloudIncrementCampaignStat(campaignId, 'unlocks', 1);
             }
             
             render();
@@ -1265,8 +2423,9 @@
         }
 
         // ==================== RENDER ====================
-        function render() {
+        function render(options = {}) {
             const app = document.getElementById('app');
+            const previousScrollY = window.scrollY;
             let html = '';
 
             switch (state.currentPage) {
@@ -1291,20 +2450,59 @@
                 case 'profile':
                     html = ProfilePage();
                     break;
+                case 'adminLogin':
+                    html = AdminLoginPage();
+                    break;
+                case 'adminDashboard':
+                    html = AdminDashboardPage();
+                    break;
+                case 'adminEditCampaign':
+                    html = AdminEditCampaignPage();
+                    break;
                 default:
                     html = HomePage();
             }
 
             app.innerHTML = html;
-            window.scrollTo(0, 0);
+            if (options.preserveScroll) {
+                window.scrollTo(0, previousScrollY);
+            } else {
+                window.scrollTo(0, 0);
+            }
         }
 
         // ==================== INIT ====================
         loadState();
+        if (isFirebaseReady()) {
+            syncCurrentWorkspaceToCloud();
+            loadCurrentUserCampaignsFromCloud();
+            if (state.adminLoggedIn) {
+                refreshAdminCloudData(false);
+            }
+        }
         
         // Handle hash routing
         function handleHashChange() {
             const hash = window.location.hash.slice(1);
+            if (hash === '/admin' || hash === '/admin/login') {
+                navigate(state.adminLoggedIn ? 'adminDashboard' : 'adminLogin');
+                return;
+            }
+            if (hash.startsWith('/c/')) {
+                try {
+                    const payload = decodeShareData(hash.slice(3));
+                    const sharedCampaign = buildSharedCampaign(payload);
+                    navigate('unlock', {
+                        username: payload.username || 'creator',
+                        slug: sharedCampaign.slug,
+                        sharedCampaign
+                    });
+                } catch (error) {
+                    console.error('Invalid shared campaign link', error);
+                    navigate('home');
+                }
+                return;
+            }
             if (hash.startsWith('/u/')) {
                 const [, , username, slug] = hash.split('/');
                 if (slug) {
@@ -1323,5 +2521,5 @@
             render();
         }
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a163cd7f0b055138',t:'MTc4MzIyNzU5MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
